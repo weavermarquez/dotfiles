@@ -1,0 +1,270 @@
+#+title: Walerie's Chezmoi File?
+#+description: The source document for a number of dotfiles.
+:PROPERTIES:
+#+PROPERTY: header-args    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
+#+PROPERTY: tangledir      ~/dev/femacs/
+#+STARTUP: content
+:END:
+
+* DONE =bashrc.d=
+** =bashrc=
+:properties:
+:tangledir: ~/
+:end:
+
+- [ ] Split this up?
+  basics; containers; bling
+
+#+name: .bashrc
+#+begin_src bash :noweb yes
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# Uncomment the following line if you don't like systemctl's auto-paging feature:
+# export SYSTEMD_PAGER=
+
+# User specific aliases and functions
+if [ -d ~/.bashrc.d ]; then
+	for rc in ~/.bashrc.d/*; do
+		if [ -f "$rc" ]; then
+			. "$rc"
+		fi
+	done
+fi
+
+# stop C-s from freezing terminal
+stty stop undef 2>/dev/null; stty start undef 2>/dev/null
+
+[[ -f /usr/share/bash-prexec ]] && source /usr/share/bash-prexec
+
+# User specific environment and startup programs
+
+# If not in a container
+#if [ ! -e /run/.containerenv ] && [ ! -e /.dockerenv ]; then ... fi
+# Homebrew is set up elsewhere.
+
+# Container specific configs
+if [ -f /run/.toolboxenv ]; then
+    source /run/.containerenv
+    # Distrobox also already has $CONTAINER_ID
+
+    if [[ $name = "femacs" ]]; then
+        export PATH="${PATH}:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin"
+    fi
+fi
+
+# PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+
+#        function command_not_found_handle() {
+#        # don't run if not in a container
+#            if [ ! -e /run/.containerenv ] && [ ! -e /.dockerenv ]; then
+#            # mommy -s 127
+#            exit 127
+#            fi
+#
+#            distrobox-host-exec "${@}"
+#            mommy -s 0
+#        }
+
+        # if [ -n "${ZSH_VERSION-}" ]; then
+        #     command_not_found_handler() {
+        #     command_not_found_handle "$@"
+        #     }
+
+### bling.sh source start
+test -f /usr/share/ublue-os/bluefin-cli/bling.sh && source /usr/share/ublue-os/bluefin-cli/bling.sh
+### bling.sh source end
+#+end_src
+
+** =bashrc.d=
+:properties:
+:tangledir: ~/.bashrc.d/
+:end:
+
+#+name: emacs.bashrc
+#+begin_src bash :mkdirp yes
+export EDITOR=emacsclient
+#+end_src
+
+** COMMENT femacs PATH and env
+:properties:
+:tangledir: ~/.bashrc.d/
+:end:
+
+I want this to be included in =femacs=.
+
+#+name: brew.sh
+#+begin_src bash
+#!/usr/bin/env bash
+[[ -d /home/linuxbrew/.linuxbrew && $- == *i* ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+#+end_src
+* DONE =desktop= shortcuts
+:properties:
+:tangledir: ~/.local/share/applications/
+:end:
+** emacs
+
+#+name: emacs.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacs-desktop  %F
+Icon=/var/home/kwalerie/.config/doom/icons/emacs.svg
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+** emacs-everywhere
+#+name: emacs-everywhere.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs Everywhere (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --eval "(emacs-everywhere)"
+Icon=/var/home/kwalerie/.config/doom/icons/doomstache.png
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+** emacsclient
+#+name: emacsclient.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs Client (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --no-wait --reuse-frame --alternate-editor="" %F
+Icon=/var/home/kwalerie/.config/doom/icons/doom.png
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+* =bluefin-cli= quadlet for homebrew executables
+:properties:
+:tangledir: ~/.config/containers/systemd/
+:end:
+
+This quadlet tangles to the Podman Quadlet directory.
+After tangling, ensure you reboot the daemon so that systemctl recognizes the quadlet and creates a corresponding service item.
+: systemctl --user daemon-reload
+: systemctl --user enable bluefin-cli.service
+
+#+name: bluefin-cli.container
+#+begin_src conf
+[Unit]
+Description=Bluefin CLI, leveraging Wolfi to provide you brew
+
+[Container]
+Annotation=run.oci.keep_original_groups=1
+AutoUpdate=registry
+ContainerName=bluefin
+Environment=SHELL=%s
+Environment=HOME=%h
+Environment=container=podman
+Exec=--verbose --name %u --user %U --group %G --home %h --init "0" --nvidia "1" -- " "
+Image=ghcr.io/ublue-os/bluefin-cli:latest
+HostName=bluefin.%l
+Label=manager=distrobox
+Network=host
+PodmanArgs=--entrypoint /usr/bin/entrypoint
+PodmanArgs=--ipc host
+PodmanArgs=--pid host
+PodmanArgs=--privileged
+PodmanArgs=--security-opt label=disable
+PodmanArgs=--security-opt apparmor=unconfined
+Ulimit=host
+User=root:root
+UserNS=keep-id
+Volume=/:/run/host:rslave
+Volume=/tmp:/tmp:rslave
+Volume=%h:%h:rslave
+Volume=/dev:/dev:rslave
+Volume=/sys:/sys:rslave
+Volume=/dev/pts
+Volume=/dev/null:/dev/ptmx
+Volume=/sys/fs/selinux
+Volume=/var/log/journal
+Volume=/var/home/%u:/var/home/%u:rslave
+Volume=%t:%t:rslave
+Volume=/etc/hosts:/etc/hosts:ro
+Volume=/etc/resolv.conf:/etc/resolv.conf:ro
+#+end_src
+
+=bluefin-cli= automatically installs to =~/.local/share/bluefin-cli/$containername/.linuxbrew=, so a Volume like below is unnecessary.
+    : Volume=bluefin-cli-Cellar.volume:/home/linuxbrew/.linuxbrew/Cellar
+
+** COMMENT Deprecated Volume :ARCHIVE:
+#+name: bluefin-cli-Cellar.volume
+#+begin_src conf :tangle no
+[Unit]
+Description=Persistent storage for bluefin-cli managed CLI applications
+
+[Volume]
+# VolumeName=bluefin-cli-Cellar
+#+end_src
+
+   Since =VolumeName= is not specified,the default value of systemd-%N is used, to make =systemd-bluefin-cli-Cellar=
+   When referring to this through systemd unit files, refer to =systemd-bluefin-cli-Cellar-volume.service=
+
+   - [X] q :: Wait, which one is it that I use in my =femacs= service?
+     =systemd-bluefin-cli-Cellar-volume.service=
+     or
+     =systemd-bluefin-cli-Cellar.service=?
+
+     The answer is clear in the systemd-quadlet documentation.
+
+* Justfile
+** Tangle Files?
+** Move Desktop entry files
+** Move Systemd Service
+** Enable Systemd Service
+** Assemble Distrobox
+** Install additional things
+** Run Justfile Setup Script
+* TODO Binaries
+- [ ] distrobox wrapper :: Ensure that after Distrobox is created, the =emacsclient= is exported from femacs to =~/.local/bin=.
+  This is because I set =EDITOR= to emacsclient, see: [[*=bashrc.d=][=bashrc.d=]]
+
+  #+begin_src bash :tangle no
+distrobox export --bin /usr/share/emacsclient
+  #+end_src
+  Along with the flags?
+* ===
+* Fonts =.local/share/fonts=
+- [ ] Do I want to manage ComicCode in here?
+* NO Icons =.local/share/icons=
+- [ ] Move my Doom Icons over there? Probably not necessary.
+* TODO API Keys?
+* GNOME Extensions
+* TODO GPTEL Prompts
+See
+* TODO Browser Settings
+* TODO Other Dotfiles
+.vscode
+
+local
+mozilla``
+authinfo
+gitconfig
+justfile
+
+* Non-Chezmoi backups
+Probably via syncthing? Or google drive?
+~/emacs-logged-keys
+* NO Emacs Configuration
+This belongs to =~/.config/doom/config.org= and =init.el=
