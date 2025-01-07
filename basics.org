@@ -1,0 +1,87 @@
+#+title: Basics
+
+Basic configurations.
+
+* DONE =bashrc.d=
+** =bashrc=
+:properties:
+:tangledir: ~/
+:end:
+
+- [ ] Split this up?
+  basics; containers; bling
+
+#+name: .bashrc
+#+begin_src bash :noweb yes
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# Uncomment the following line if you don't like systemctl's auto-paging feature:
+# export SYSTEMD_PAGER=
+
+# User specific aliases and functions
+if [ -d ~/.bashrc.d ]; then
+	for rc in ~/.bashrc.d/*; do
+		if [ -f "$rc" ]; then
+			. "$rc"
+		fi
+	done
+fi
+
+# stop C-s from freezing terminal
+stty stop undef 2>/dev/null; stty start undef 2>/dev/null
+
+[[ -f /usr/share/bash-prexec ]] && source /usr/share/bash-prexec
+
+# User specific environment and startup programs
+
+# If not in a container
+#if [ ! -e /run/.containerenv ] && [ ! -e /.dockerenv ]; then ... fi
+# Homebrew is set up elsewhere.
+
+# Container specific configs
+if [ -f /run/.toolboxenv ]; then
+    source /run/.containerenv
+    # Distrobox also already has $CONTAINER_ID
+
+    if [[ $name = "femacs" ]]; then
+        export PATH="${PATH}:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin"
+    fi
+fi
+
+# PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+
+#        function command_not_found_handle() {
+#        # don't run if not in a container
+#            if [ ! -e /run/.containerenv ] && [ ! -e /.dockerenv ]; then
+#            # mommy -s 127
+#            exit 127
+#            fi
+#
+#            distrobox-host-exec "${@}"
+#            mommy -s 0
+#        }
+
+        # if [ -n "${ZSH_VERSION-}" ]; then
+        #     command_not_found_handler() {
+        #     command_not_found_handle "$@"
+        #     }
+
+### bling.sh source start
+test -f /usr/share/ublue-os/bluefin-cli/bling.sh && source /usr/share/ublue-os/bluefin-cli/bling.sh
+### bling.sh source end
+#+end_src
+
+** =bashrc.d=
+:properties:
+:tangledir: ~/.bashrc.d/
+:end:
+
+#+name: emacs.bashrc
+#+begin_src bash :mkdirp yes
+export EDITOR=emacsclient
+#+end_src
