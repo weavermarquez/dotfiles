@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Emacs Everywhere (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --eval "(emacs-everywhere)"
+Icon=/var/home/kwalerie/.config/doom/icons/doomstache.png
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs

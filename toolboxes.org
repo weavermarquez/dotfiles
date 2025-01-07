@@ -12,6 +12,9 @@ For general purpose computing, I set up two [[https://github.com/ublue-os/toolbo
 - =femacs= :: a ready-to-go environment for my Doom Emacs configuration. Managed via [[https://github.com/ublue-os/toolboxes/?tab=readme-ov-file#systemd-one-shots][systemd]].
 
 * TODO Inbox
+:properties:
+:header-args: :tangle no
+:end:
 - [ ] I wonder what I could do to make this setup usable with Github Codespaces?
 - [X] See if you can set up =femacs-Cellar= here: [[*Distrobox systemd =.service=][Distrobox systemd =.service=]]
 - [X] Set up femacs Profile such that emacs has proper PATH.
@@ -23,9 +26,6 @@ For general purpose computing, I set up two [[https://github.com/ublue-os/toolbo
 - [ ] Replace packages with homebrew replacements.
 
 ** TODO Identify which packages above should be installed on Homebrew instead.
-:properties:
-:header-args: :tangle no
-:end:
 
 Replace [[*Fedora Packages][Fedora Packages]] with Homebrew Packages.
 
@@ -33,9 +33,6 @@ There are some packages that come with Fedora-Toolbox.
 [[https://github.com/ublue-os/toolboxes/blob/main/toolboxes/fedora-toolbox/packages.fedora]]
 
 ** COMMENT bluefin package installations
-:properties:
-:header-args: :noweb-ref bluefin-packages
-:end:
 *** homebrew
 *** dnf
 *** pip
@@ -59,7 +56,7 @@ markdownlint
 # npm install -g typescript-language-server typescript
 #+end_example
 
-* DONE bluefin-cli quadlet =bluefin-cli.container=
+* bluefin-cli quadlet =bluefin-cli.container=
 :properties:
 :header-args: :tangle ~/.config/containers/systemd/bluefin-cli.container
 :end:
@@ -374,7 +371,7 @@ Start by default on boot.
 [Install]
 WantedBy=multi-user.target default.target
 #+end_src
-** Integration
+** Integration =desktop= entries
 :properties:
 :tangledir: ~/.local/share/applications/
 :header-args:    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
