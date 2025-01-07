@@ -1,0 +1,459 @@
+#+title: Toolboxes
+#+description: My primary toolboxes
+:PROPERTIES:
+#+STARTUP: content
+:END:
+
+For general purpose computing, I set up two [[https://github.com/ublue-os/toolboxes/][ublue toolboxes]] on my system: =bluefin-cli= and =femacs=.
+- =bluefin-cli= :: a containerized =homebrew= environment. Managed via *Podman quadlets*.
+  - =npm= CLI tools
+  - =pip= CLI tools
+
+- =femacs= :: a ready-to-go environment for my Doom Emacs configuration. Managed via [[https://github.com/ublue-os/toolboxes/?tab=readme-ov-file#systemd-one-shots][systemd]].
+
+* TODO Inbox
+- [ ] I wonder what I could do to make this setup usable with Github Codespaces?
+- [X] See if you can set up =femacs-Cellar= here: [[*Distrobox systemd =.service=][Distrobox systemd =.service=]]
+- [X] Set up femacs Profile such that emacs has proper PATH.
+- [X] Q :: Why does [[https://github.com/ublue-os/toolboxes/blob/main/systemd/bluefin-cli/bluefin-cli-distrobox-oneshot.service][this bluefin-cli oneshot]] refer to =bluefin-cli-Cellar=
+  But the =distrobox.ini= refers to =systemd-bluefin-cli-Cellar=?
+  This is anwered on the Podman system documentation.
+:end:
+
+- [ ] Replace packages with homebrew replacements.
+
+** TODO Identify which packages above should be installed on Homebrew instead.
+:properties:
+:header-args: :tangle no
+:end:
+
+Replace [[*Fedora Packages][Fedora Packages]] with Homebrew Packages.
+
+There are some packages that come with Fedora-Toolbox.
+[[https://github.com/ublue-os/toolboxes/blob/main/toolboxes/fedora-toolbox/packages.fedora]]
+
+** COMMENT bluefin package installations
+:properties:
+:header-args: :noweb-ref bluefin-packages
+:end:
+*** homebrew
+*** dnf
+*** pip
+*** npm
+As root:
+#+begin_src
+npm install -g
+
+dockerfile-language-server-nodejs
+typescript-language-server typescript
+markdownlint
+#+end_src
+
+- [ ] Javascript LSP
+#+begin_example
+
+# javascript lsp
+# https://docs.doomemacs.org/v21.12/modules/lang/javascript/
+# https://yarnpkg.com/getting-started/install
+# additional_packages="nodejs"
+# npm install -g typescript-language-server typescript
+#+end_example
+
+* DONE bluefin-cli quadlet =bluefin-cli.container=
+:properties:
+:header-args: :tangle ~/.config/containers/systemd/bluefin-cli.container
+:end:
+:sources:
+[[https://github.com/ublue-os/toolboxes/tree/main/quadlets/bluefin-cli/bluefin-cli.container][source - uBlue bluefin-cli quadlet]]
+[[https://www.redhat.com/en/blog/quadlet-podman][guide - red hat intro to Podman Quadlet]]
+
+[[https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html][manual - quadlet files]]
+[[https://www.freedesktop.org/software/systemd/man/latest/systemd.syntax.html][manual - systemd unit syntax]]
+:end:
+
+This container is managed via *Podman quadlets*, and tangles to Quadlet directory =~/.config/containers/systemd/=. uBlue intends for this container to replace most CLI workflows otherwise performed on the host. Uses =homebrew= and has a blinged out CLI experience. However, this blinged out experience is not very relevant for Emacs.
+
+After tangling, ensure you reboot the daemon so that systemctl recognizes the quadlet and creates a corresponding service item.
+: systemctl --user daemon-reload
+: systemctl --user enable bluefin-cli.service
+
+** unit
+#+name: bluefin-unit
+#+begin_src conf
+[Unit]
+Description=Bluefin CLI, leveraging Wolfi to provide you brew
+#+end_src
+
+** install
+[[https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#enabling-unit-files][enabling quadlet unit files]]
+
+Quadlet services are considered transient, cannot be affected by =systemctl enable=. Instead, add this line:
+#+name: bluefin-install
+#+begin_src conf
+[Install]
+WantedBy=multi-user.target default.target
+#+end_src
+
+** service
+#+name: bluefin-service
+#+begin_src conf
+[Service]
+Restart=always
+#+end_src
+** container
+#+name: bluefin-container
+#+begin_src conf
+[Container]
+Annotation=run.oci.keep_original_groups=1
+AutoUpdate=registry
+ContainerName=bluefin
+Environment=SHELL=%s
+Environment=HOME=%h
+Environment=container=podman
+Exec=--verbose --name %u --user %U --group %G --home %h --init "0" --nvidia "1" -- " "
+Image=ghcr.io/ublue-os/bluefin-cli:latest
+HostName=bluefin.%l
+Label=manager=distrobox
+Network=host
+PodmanArgs=--entrypoint /usr/bin/entrypoint
+PodmanArgs=--ipc host
+PodmanArgs=--pid host
+PodmanArgs=--privileged
+PodmanArgs=--security-opt label=disable
+PodmanArgs=--security-opt apparmor=unconfined
+Ulimit=host
+User=root:root
+UserNS=keep-id
+#+end_src
+
+** container volumes
+#+name: bluefin-container-volumes
+#+begin_src conf
+Volume=/:/run/host:rslave
+Volume=/tmp:/tmp:rslave
+Volume=%h:%h:rslave
+Volume=/dev:/dev:rslave
+Volume=/sys:/sys:rslave
+Volume=/dev/pts
+Volume=/dev/null:/dev/ptmx
+Volume=/sys/fs/selinux
+Volume=/var/log/journal
+Volume=/var/home/%u:/var/home/%u:rslave
+Volume=%t:%t:rslave
+Volume=/etc/hosts:/etc/hosts:ro
+Volume=/etc/resolv.conf:/etc/resolv.conf:ro
+#+end_src
+
+** COMMENT Deprecated Volume
+
+=bluefin-cli= automatically installs to =~/.local/share/bluefin-cli/$containername/.linuxbrew=, so a Volume like below is unnecessary.
+    : Volume=bluefin-cli-Cellar.volume:/home/linuxbrew/.linuxbrew/Cellar
+
+
+#+name: bluefin-cli-Cellar.volume
+#+begin_src conf :tangle no
+[Unit]
+Description=Persistent storage for bluefin-cli managed CLI applications
+
+[Volume]
+# VolumeName=bluefin-cli-Cellar
+#+end_src
+
+   Since =VolumeName= is not specified,the default value of systemd-%N is used, to make =systemd-bluefin-cli-Cellar=
+   When referring to this through systemd unit files, refer to =systemd-bluefin-cli-Cellar-volume.service=
+
+   - [X] q :: Wait, which one is it that I use in my =femacs= service?
+     =systemd-bluefin-cli-Cellar-volume.service=
+     or
+     =systemd-bluefin-cli-Cellar.service=?
+
+     The answer is clear in the systemd-quadlet documentation.
+* femacs | distrobox for Doom Emacs
+🤠: Is it really possible for an Emacs and a Container to be in a relationship?
+
+This file is *not* a configuration for Doom Emacs! Rather, this configuration is for =femacs=, a Distrobox Container, and handles:
+- container setup with a =distrobox assemble= file
+  - Emacs package optional requirements
+- orchestration with =systemd=
+  - Automatic load on boot
+  - Automatic upgrades
+- integration with the host & other containers
+  - Desktop files
+
+
+** Why =distrobox assemble= and not quadlet?
+
+In order to use a Quadlet for femacs, I would have to layer on top of uBlue's =fedora-distrobox= in order to get the packages I want. However, since this is a pet container, I want to install a lot of packages, which would waste a lot of bandwidth and compute if I also had nightly rebuilds.
+- Easier management of installed packages
+- Easier management of initial container runtime
+
+However, I might switch to Quadlets in the future, now that I am better able to separate out what needs to be installed on =bluefin-cli= vs. =femacs=.
+
+The Assemble file specifies how the distrobox is to be set up.
+The systemd service file will automatically start up the toolbox. However, I do not want to reset the container each time.
+** Distrobox Assemble File =distrobox.ini=
+:properties:
+:header-args: :tangle ~/.config/systemd/user/distrobox.ini
+:end:
+:sources:
+[[https://github.com/89luca89/distrobox/blob/main/docs/usage/distrobox-assemble.md][manual - distrobox assemble]]
+:end:
+
+*** DONE Basics
+
+|-----------+---------------------------------------------------|
+| keyword   | thoughts                                          |
+|-----------+---------------------------------------------------|
+| image     | [[https://github.com/ublue-os/toolboxes/tree/main/toolboxes/fedora-toolbox][ublue fedora-toolbox]]                              |
+| init      | I don't need systemctl in femacs                  |
+| nvidia    | I want nvidia driver integration                  |
+| pull      | I don't need to pull the image every single time  |
+| root      | This container is not rootful                     |
+| replace   | femacs should be rebuilt when there are updates   |
+| start_now | Start the container immediately                   |
+|           |                                                   |
+|-----------+---------------------------------------------------|
+
+#+name: distrobox.ini
+#+begin_src conf
+[femacs]
+image=ghcr.io/ublue-os/fedora-toolbox:latest
+init=false
+nvidia=true
+pull=false
+root=false
+replace=true
+start_now=true
+additional_packages="emacs fd-find python-pip nodejs"
+#+end_src
+
+*** Access homebrew through =bluefin-cli=
+#+begin_src conf
+volume="${HOME}/.local/share/bluefin-cli/bluefin/.linuxbrew/Cellar/:/home/linuxbrew/.linuxbrew/Cellar"
+#+end_src
+
+We don't use a named podman volume because bluefin already saves to a specific folder on home drive.
+: volume=systemd-bluefin-cli-Cellar:/home/linuxbrew/.linuxbrew/Cellar
+
+*** Fedora Packages
+**** vterm
+#+begin_src conf
+additional_packages="libvterm cmake libtool"
+#+end_src
+
+**** vlc =is not available on brew=
+#+begin_src conf
+additional_packages="vlc"
+#+end_src
+**** pdf-tools
+#+begin_src conf
+additional_packages="autoconf automake gcc libpng-devel make poppler-devel poppler-glib-devel zlib-devel pkgconf"
+#+end_src
+
+**** emacs-everywhere
+#+begin_src conf
+additional_packages="xclip xdotool xprop xwininfo"
+#+end_src
+**** dirvish
+#+begin_src conf
+additional_packages="poppler-utils ffmpegthumbnailer mediainfo ImageMagick"
+#+end_src
+**** TODO python lsp
+https://docs.doomemacs.org/v21.12/modules/lang/python/
+#+begin_src conf
+additional_packages="pytest python-nose python-black"
+additional_packages="pyflakes python-isort"
+#+end_src
+
+- [ ] enable basedpyright
+# init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/basedpyright;
+# pip install basedpyright
+**** dictionary and prose
+Offline Dictionary
+https://docs.doomemacs.org/v21.12/modules/tools/lookup/
+#+begin_src conf
+additional_packages="wordnet proselint"
+#+end_src
+**** sqlite
+Dash Docsets, Org-Roam
+#+begin_src conf
+additional_packages="sqlite"
+#+end_src
+**** debugger
+https://docs.doomemacs.org/v21.12/modules/tools/debugger/
+#+begin_src conf
+additional_packages="lldb gdb"
+# missing lldb-mi, much must be compiled
+#+end_src
+**** emacs-everywhere
+**** lsp-bridge
+#+begin_src conf
+additional_packages="python-epc python-orjson python-sexpdata"
+additional_packages="python-six python-setuptools python-paramiko"
+additional_packages="python3-rapidfuzz python-watchdog"
+#+end_src
+**** pandoc
+#+begin_src conf
+additional_packages="pandoc pandoc-cli"
+#+end_src
+**** DONE COMMENT latex
+Replaced with Homebrew.
+
+#+begin_src conf
+additional_packages="texlive-scheme-full"
+#+end_src
+
+**** other useful packages
+undo compression, direnv
+#+begin_src conf
+additional_packages="zstd direnv"
+#+end_src
+*** Init Hooks
+**** COMMENT Replace Shell
+This seems wholly unnecessary. Both are symlinks to =bash= anyways.
+
+#+begin_src conf :tangle no
+init_hooks=ln -fs /bin/sh /usr/bin/sh;
+#+end_src
+
+**** Host Utilities
+
+Linking to =distrobox-host-exec= is a convenient way to call programs only accessible through the host.
+
+#+begin_src conf
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/docker;
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/flatpak;
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/podman;
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/rpm-ostree;
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/transactional-update;
+
+init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/conmon;
+init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/crun;
+init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/docker-compose;
+init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/xdg-open;
+#+end_src
+** Distrobox systemd =femacs-distrobox.service=
+:properties:
+:header-args: :tangle ~/.config/systemd/user/femacs-distrobox.service
+:end:
+
+When I want to re-install femacs, call ~distrobox assemble rm --file /my/custom/distrobox.ini~ before ~systemctl --user daemon-reload~ and ~systemctl --user start femacs-distrobox.service~
+
+- [ ] Figure out what I can delegate out from here and into bluefin-cli.
+- [ ] Q :: Why does [[https://github.com/ublue-os/toolboxes/blob/main/systemd/bluefin-cli/bluefin-cli-distrobox-oneshot.service][this bluefin-cli oneshot]] refer to =bluefin-cli-Cellar=
+  But the =distrobox.ini= refers to =systemd-bluefin-cli-Cellar=
+*** user
+#+name: femacs-unit
+#+begin_src conf
+[Unit]
+Description=Fedora Toolbox for your distrobox fun
+#+end_src
+
+I removed this below line because turns out I don't need a separate volume. But it's useful to know that I can do that.
+: Wants=systemd-bluefin-cli-Cellar
+
+*** service
+
+For systemd service files, you have to use =%h= instead of =~=.
+ExecStart=/usr/bin/distrobox assemble create --file %h/.config/containers/distrobox.ini -n femacs
+
+#+name: femacs-service
+#+begin_src conf
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/distrobox assemble create --file %h/.config/systemd/user/distrobox.ini -n femacs
+ExecStart=/usr/bin/distrobox enter femacs
+RemainAfterExit=true
+Restart=always
+#+end_src
+
+*** install
+Start by default on boot.
+#+name: femacs-install
+#+begin_src conf
+[Install]
+WantedBy=multi-user.target default.target
+#+end_src
+** Integration
+:properties:
+:tangledir: ~/.local/share/applications/
+:header-args:    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
+:end:
+
+Integration with:
+- GNOME Application Shortcuts
+- bashrc
+
+There is a dependency to the Doom Icons in =~/.config/doom/icons/emacs.svg= , =doomstache.png=, =doom.png=
+
+*** emacs
+
+#+name: emacs.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacs-desktop  %F
+Icon=/var/home/kwalerie/.config/doom/icons/emacs.svg
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+*** emacs-everywhere
+#+name: emacs-everywhere.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs Everywhere (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --eval "(emacs-everywhere)"
+Icon=/var/home/kwalerie/.config/doom/icons/doomstache.png
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+*** emacsclient
+#+name: emacsclient.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs Client (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --no-wait --reuse-frame --alternate-editor="" %F
+Icon=/var/home/kwalerie/.config/doom/icons/doom.png
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+*** TODO femacs integration with Homebrew =.bashrc.d=
+:properties:
+:tangledir: ~/.bashrc.d/
+:end:
+
+I want this to be included in =femacs=.
+This modifies the PATH. Should I fix that instead of using the approach in [[file:chezmoi.org::*=bashrc=][=bashrc=]] where detected if we were in =femacs= then modified path?
+
+#+name: brew.bashrc
+#+begin_src bash
+#!/usr/bin/env bash
+[[ -d /home/linuxbrew/.linuxbrew && $- == *i* ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+#+end_src
+** Femacs maintenance
+*** Doom Emacs' Env and PATH
+
+[[*femacs PATH and env][femacs PATH and env]]
+
+#+begin_src emacs-lisp :tangle no
+(getenv "PATH")
+#+end_src
+
+Oh, okay, all I needed was to run ~doom env~ with my desired shell environment.
