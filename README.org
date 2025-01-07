@@ -12,7 +12,7 @@ This repo is the home of my system configuration, which follows the uBlue projec
 - Host OS: [[https://github.com/ublue-os/bluefin][bluefin]] (Fedora Silverblue), which pushes a containerized approach.
 - Key Features:
   - Literate Approach :: The purpose of a literate approach is to *reduce the cognitive load*. Whenever I make changes to my system, it helps to have extensive notes about my journey right next to the configuration!
-  - Distrobox [[https://docs.projectbluefin.io/bluefin-dx#pet-containers][pet containers]]:
+  - Distrobox [[https://docs.projectbluefin.io/bluefin-dx#pet-containers][pet containers]] ::
     - =bluefin-cli= a containerized =homebrew= that shares apps with host and other containers.
     - =femacs= an environment for Doom Emacs and any optional package requirements.
 
@@ -23,10 +23,10 @@ I manage configuration files in this repo using Emacs Org Mode and Chezmoi. This
 
 * Using my configuration
 :sources:
-https://leanpub.com/lit-config/read
-https://github.com/gabyx/dotfiles
-https://github.com/fredrdz/dotfiles
-https://github.com/topics/chezmoi?o=desc&s=updated
+- [[https://leanpub.com/lit-config/read][Diego Zamboni's introduction to literate configuration]]
+- [[https://github.com/gabyx/dotfiles][example gabyx]]
+- [[https://github.com/fredrdz/dotfiles][example fredrdz]]
+- [[https://github.com/topics/chezmoi?o=desc&s=updated][example search term]]
 :end:
 
 The purpose of a literate approach is to *reduce the cognitive load*. Whenever I make changes to my system, it helps to have extensive notes about my journey right next to the configuration!
