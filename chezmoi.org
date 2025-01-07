@@ -1,12 +1,12 @@
 #+title: Walerie's Chezmoi File?
-#+description: The source document for a number of dotfiles.
+#+description: The source document for Chezmoi and ~/.dotfiles related utilities.
 :PROPERTIES:
 #+PROPERTY: header-args    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
 #+PROPERTY: tangledir      ~/.dotfiles/
 #+STARTUP: content
 :END:
 
-This file is where I manage chezmoi and this repository.
+This file is where I manage chezmoi and this repository. Anything to do with =~/.dotfiles=
 - Chezmoi
 - Justfile
 
@@ -20,3 +20,34 @@ sourceDir = "~/.dotfiles"
 #+end_src
 
 * Justfile
+* PROJ Inbox
+** Fonts =.local/share/fonts=
+- [ ] Do I want to manage ComicCode in here?
+** NO Icons =.local/share/icons=
+- [ ] Move my Doom Icons over there? Probably not necessary.
+** API Keys?
+** GNOME Extensions
+** GPTEL Prompts
+** Browser Settings
+** Other Dotfiles
+.vscode
+
+local
+mozilla``
+authinfo
+gitconfig
+justfile
+
+** Non-Chezmoi backups
+Probably via syncthing? Or google drive?
+~/emacs-logged-keys
+** TODO Binaries
+- [ ] distrobox wrapper :: Ensure that after Distrobox is created, the =emacsclient= is exported from femacs to =~/.local/bin=.
+  This is because I set =EDITOR= to emacsclient, see: [[*=bashrc.d=][=bashrc.d=]]
+
+  #+begin_src bash :tangle no
+distrobox export --bin /usr/share/emacsclient
+  #+end_src
+  Along with the flags?
+** NO Emacs Configuration
+This belongs to =~/.config/doom/config.org= and =init.el=
