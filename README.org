@@ -1,30 +1,79 @@
-#+title: Readme
-* dotfiles for fedora siverblue 💙 doom emacs
+#+title: doom emacs 💙 uBlue
+#+description: Documentation of my config management workflow.
+:PROPERTIES:
+#+PROPERTY: header-args    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
+#+PROPERTY: tangledir      ~/.dotfiles/
+#+STARTUP: content
+:END:
 
-🤠: Is it really possible for an Emacs and a Container to be in a relationship?
+This repo is the home of my system configuration, which follows the uBlue project as much as possible while supporting full Doom Emacs usage, as it can be tricky to understand how to use Emacs in a container paradigm.
+
+- Laptop: [[https://www.notebookcheck.net/Lenovo-Yoga-720-15IKB-7700HQ-FHD-GTX-1050-Laptop-Review.227572.0.html][Lenovo Yoga 720-15 IKB]]
+- Host OS: [[https://github.com/ublue-os/bluefin][bluefin]] (Fedora Silverblue), which pushes a containerized approach.
+- Key Features:
+  - Literate Approach :: The purpose of a literate approach is to *reduce the cognitive load*. Whenever I make changes to my system, it helps to have extensive notes about my journey right next to the configuration!
+  - Distrobox [[https://docs.projectbluefin.io/bluefin-dx#pet-containers][pet containers]]:
+    - =bluefin-cli= a containerized =homebrew= that shares apps with host and other containers.
+    - =femacs= an environment for Doom Emacs and any optional package requirements.
+
+I manage configuration files in this repo using Emacs Org Mode and Chezmoi. This allows me to modify all my configurations in one folder, while exporting and ensuring changes are backed up with two commands:
+
+: doom +org tangle ~/.dotfiles
+: chezmoi apply
+
+* Using my configuration
+:sources:
+https://leanpub.com/lit-config/read
+https://github.com/gabyx/dotfiles
+https://github.com/fredrdz/dotfiles
+https://github.com/topics/chezmoi?o=desc&s=updated
+:end:
+
+The purpose of a literate approach is to *reduce the cognitive load*. Whenever I make changes to my system, it helps to have extensive notes about my journey right next to the configuration!
+
+In order to make use of this repository, you can either:
+  - Make sense of it :: Read through the =.org= files, which will include full context of the information you need and any decisions made.
+  - Clone my setup :: Use ~chezmoi~ to directly apply any files in =chezmoi/= to your system. This won't make much sense unless you are me. If you are unfamiliar with chezmoi, see [[https://www.chezmoi.io/quick-start][chezmoi quick start]]
+
+** Justfile Commands
+#+begin_src :tangle justfile
+default:
+    echo 'Hello, world!'
+
+# Assemble distrobox containers
+assemble:
+  echo 'Assembling and replacing distroboxes ...'
+  distrobox assemble create --replace --file distrobox.ini
+
+#+end_src
+** Workflow
+
+#+begin_src mermaid
+---
+title: Usual Workflow, Doom Emacs installed
+config:
+  theme: default
+---
+
+sequenceDiagram
+    Participant home as home directory
+    Participant source as working directory
+    Participant local as local repo
+    Participant remote as remote repo
+
+    note over source: Edit .org files as necessary
+    source ->> home: doom +org tangle ~/.dotfiles
+    home ->> source: chezmoi add <files>
+
+    note over source:
+    source ->> local: git add
+    local ->> remote: git push
+#+end_src
 
 I went with distrobox rather than building a new Container, as the =fedora-toolbox= already covers much of what I need.
-https://github.com/ublue-os/toolboxes/
 
-** TODO Tasks
-- install chezmoi.el
-- add local hook: after tangling, optionally update chezmoi?
-- add local variable to either tangle here or to intended target.
-- See if it makes sense to install packages
-  https://www.chezmoi.io/user-guide/advanced/install-packages-declaratively/
-
-If making changes:
-1. Modify femacs.org, tangle.
-2. chezmoi update.
-   the /source/ femacs.org along with any modified tangled files
-3. git add, stage, commit, push
-
-If backing up or restoring:
-1. pull
-2. chezmoi diff
-3. chezmoi apply
-** TODO Inbox
-*** Comparing Brew
+* TODO Inbox
+** Comparing Brew
 
 Host after uninstalling texlive.
 #+begin_example
@@ -61,10 +110,17 @@ gd		 krb5	      libsm	    libxmu	  mpfr		sqlite
 gdbm		 leptonica    libtiff	    libxpm	  ncurses	tcl-tk
 
 #+end_example
-*** NO Also, what's up with the binaries I have in home? Should I replace those?
+** NO Also, what's up with the binaries I have in home? Should I replace those?
 I cannot.
-*** TODO Upload all this stuff to Git or something.
-*** Inspiration
+** TODO Writing the Justfile
+*** Tangle Files?
+*** Move Desktop entry files
+*** Move Systemd Service
+*** Enable Systemd Service
+*** Assemble Distrobox
+*** Install additional things
+*** Run Justfile Setup Script
+** Inspiration
 https://github.com/herzenschein/herz-quadlet
 *** Nix...?
 https://github.com/idlip/d-nix
@@ -72,47 +128,23 @@ https://old.reddit.com/r/emacs/comments/1025nja/any_examples_of_a_config_in_org_
 https://old.reddit.com/r/NixOS/comments/pk8jo0/nix_emacs_orgbabel_src_blocks_has_anyone_got_them/
 https://old.reddit.com/r/emacs/comments/16gr2nl/my_emacs_nix_flake_is_now_built_entirely_from_an/
 *** IDEA Migrating from org-babel to chezmoi
-
 https://simendsjo.me/blog/20240513200515-migrating_my_systems_from_org_babel_to_chezmoi
-*** IDEA chezmoi.el
-https://github.com/tuh8888/chezmoi.el
-** Design
+** TODO Tasks
+- install chezmoi.el
+- add local hook: after tangling, optionally update chezmoi?
+- add local variable to either tangle here or to intended target.
+- See if it makes sense to install packages
+  https://www.chezmoi.io/user-guide/advanced/install-packages-declaratively/
 
-1. Make changes to the Org file here.
-   a. Tangle to Target directory.
-      Yes, because I want to see immediate changes.
+If making changes:
+1. Modify femacs.org, tangle.
+2. chezmoi update.
+   the /source/ femacs.org along with any modified tangled files
+3. git add, stage, commit, push
 
-      If it breaks, I can grab the tangled source without having to revert the config.org. I can revert the config.org as needed by git independently.
-      This way, I can also revert changes to the original config.org file.
-
-      If I git commit without re-adding, then the source and literate file are out of sync.
-
-   b. Or Source directory...?
-      If I tangle to source directory, then I would have to ~chezmoi apply~ in order to see my changes. Automatically calling this isn't hard to script at all.
-
-     If I git commit without applying, then the source and literate file are still in sync.
-     If this breaks, then I can go back to where I need to from git.
-
-
-
-
-What is the pro or con for either approach?
-The point of using chezmoi in the first place is so that we can directly grab tangled files that are ready to be used.
-**
-* Sources
-https://github.com/gabyx/dotfiles
-https://github.com/fredrdz/dotfiles
-https://github.com/topics/chezmoi?o=desc&s=updated
-
-* Justfile
-This
-
-* Doom Emacs
-
-config.org tangles to config.el and package.el
-
-I could create a custom script to tangle config.org file from here, maybe.
-
-* Chezmoi
-
-* Femacs
+If backing up or restoring:
+1. pull
+2. chezmoi diff
+3. chezmoi apply
+* License
+Released under the [[file:LICENSE][Unlicense]] unless otherwise specified by license files in subfolders.
