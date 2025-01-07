@@ -51,3 +51,76 @@ distrobox export --bin /usr/share/emacsclient
   Along with the flags?
 ** NO Emacs Configuration
 This belongs to =~/.config/doom/config.org= and =init.el=
+** Comparing Brew
+
+Host after uninstalling texlive.
+#+begin_example
+atuin	       bzip2		dysk   gmp	  libgit2     libxcrypt  openssl@3    shellcheck  yq
+basedpyright   c-ares		expat  icu4c@76   libmpc      lz4	 pandoc       sqlite	  yt-dlp
+bash	       ca-certificates	eza    isl	  libnghttp2  mpdecimal  pcre2	      tealdeer	  zlib
+bat	       certifi		fd     krb5	  libnsl      mpfr	 podlet       trash-cli   zoxide
+berkeley-db@5  chezmoi		gcc    libedit	  libssh2     ncurses	 python@3.13  ugrep	  zstd
+binutils       devcontainer	gh     libffi	  libtirpc    node	 readline     unzip
+brotli	       direnv		glab   libgccjit  libuv       oniguruma  ripgrep      xz
+#+end_example
+
+bluefin-cli after installing cowsay and texlive. why is it bigger?
+#+begin_example
+acl		 gettext      libarchive    libtirpc	  libxrandr	openexr		       tesseract
+alsa-lib	 ghostscript  libavif	    libtommath	  libxrender	openjdk		       texlive
+aom		 giflib       libb2	    libtool	  libxshmfence	openjpeg	       unzip
+berkeley-db@5	 glib	      libclc	    libunistring  libxt		openssl@3	       util-linux
+binutils	 glslang      libde265	    libva	  libxtst	pango		       valgrind
+brotli		 gmp	      libdeflate    libvdpau	  libxv		pcre2		       wayland
+bzip2		 gperf	      libdrm	    libvmaf	  libxxf86vm	perl		       wayland-protocols
+ca-certificates  graphite2    libedit	    libx11	  libyaml	pixman		       webp
+cairo		 gzip	      libffi	    libxau	  little-cms2	plotutils	       x265
+clisp		 harfbuzz     libheif	    libxaw	  llvm		potrace		       xorgproto
+cowsay		 highway      libice	    libxcb	  lm-sensors	pstoedit	       xz
+cups		 icu4c@76     libidn	    libxcrypt	  lua		python-packaging       z3
+dbus		 imagemagick  liblqr	    libxdmcp	  luajit	python@3.12	       zip
+elfutils	 imath	      libnsl	    libxext	  lz4		python@3.13	       zlib
+expat		 jasper       libpciaccess  libxfixes	  lzo		readline	       zstd
+fontconfig	 jbig2dec     libpng	    libxft	  m4		ruby
+freetype	 jpeg-turbo   libraw	    libxi	  mesa		shared-mime-info
+fribidi		 jpeg-xl      libsigsegv    libxml2	  mpdecimal	spirv-llvm-translator
+gd		 krb5	      libsm	    libxmu	  mpfr		sqlite
+gdbm		 leptonica    libtiff	    libxpm	  ncurses	tcl-tk
+
+#+end_example
+** NO Also, what's up with the binaries I have in home? Should I replace those?
+I cannot.
+** TODO Writing the Justfile
+*** Tangle Files?
+*** Move Desktop entry files
+*** Move Systemd Service
+*** Enable Systemd Service
+*** Assemble Distrobox
+*** Install additional things
+*** Run Justfile Setup Script
+** Inspiration
+https://github.com/herzenschein/herz-quadlet
+*** Nix...?
+https://github.com/idlip/d-nix
+https://old.reddit.com/r/emacs/comments/1025nja/any_examples_of_a_config_in_org_on_nix/
+https://old.reddit.com/r/NixOS/comments/pk8jo0/nix_emacs_orgbabel_src_blocks_has_anyone_got_them/
+https://old.reddit.com/r/emacs/comments/16gr2nl/my_emacs_nix_flake_is_now_built_entirely_from_an/
+*** IDEA Migrating from org-babel to chezmoi
+https://simendsjo.me/blog/20240513200515-migrating_my_systems_from_org_babel_to_chezmoi
+** TODO Tasks
+- install chezmoi.el
+- add local hook: after tangling, optionally update chezmoi?
+- add local variable to either tangle here or to intended target.
+- See if it makes sense to install packages
+  https://www.chezmoi.io/user-guide/advanced/install-packages-declaratively/
+
+If making changes:
+1. Modify femacs.org, tangle.
+2. chezmoi update.
+   the /source/ femacs.org along with any modified tangled files
+3. git add, stage, commit, push
+
+If backing up or restoring:
+1. pull
+2. chezmoi diff
+3. chezmoi apply
