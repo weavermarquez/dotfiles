@@ -51,8 +51,6 @@ assemble:
 #+begin_src mermaid
 ---
 title: Usual Workflow, Doom Emacs installed
-config:
-  theme: default
 ---
 
 sequenceDiagram
