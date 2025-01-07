@@ -85,3 +85,6 @@ test -f /usr/share/ublue-os/bluefin-cli/bling.sh && source /usr/share/ublue-os/b
 #+begin_src bash :mkdirp yes
 export EDITOR=emacsclient
 #+end_src
+
+- [ ] Also see =toolboxes.org=
+[[file:toolboxes.org::*femacs integration with Homebrew =.bashrc.d=][femacs integration with Homebrew =.bashrc.d=]]
