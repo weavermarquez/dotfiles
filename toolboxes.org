@@ -265,34 +265,49 @@ additional_packages="pyflakes python-isort"
 - [ ] enable basedpyright
 # init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/basedpyright;
 # pip install basedpyright
-**** dictionary and prose
-Offline Dictionary
-https://docs.doomemacs.org/v21.12/modules/tools/lookup/
-#+begin_src conf
-additional_packages="wordnet proselint"
-#+end_src
-**** sqlite
-Dash Docsets, Org-Roam
-#+begin_src conf
-additional_packages="sqlite"
-#+end_src
-**** debugger
-https://docs.doomemacs.org/v21.12/modules/tools/debugger/
-#+begin_src conf
-additional_packages="lldb gdb"
-# missing lldb-mi, much must be compiled
-#+end_src
-**** emacs-everywhere
+
+Still needs nose, flakes,
+: brew install pytest black isort
+
 **** lsp-bridge
 #+begin_src conf
 additional_packages="python-epc python-orjson python-sexpdata"
 additional_packages="python-six python-setuptools python-paramiko"
 additional_packages="python3-rapidfuzz python-watchdog"
 #+end_src
-**** pandoc
+
+
+**** DONE dictionary and prose
+Offline Dictionary
+https://docs.doomemacs.org/v21.12/modules/tools/lookup/
+#+begin_src conf
+additional_packages="wordnet proselint"
+#+end_src
+
+: brew install wordnet proselint
+**** sqlite
+Dash Docsets, Org-Roam
+#+begin_src conf
+additional_packages="sqlite"
+#+end_src
+
+: brew install sqlite
+**** DONE debugger
+https://docs.doomemacs.org/v21.12/modules/tools/debugger/
+#+begin_src conf
+additional_packages="lldb gdb"
+# missing lldb-mi, much must be compiled
+#+end_src
+
+: brew install lldb gdb
+**** DONE pandoc
 #+begin_src conf
 additional_packages="pandoc pandoc-cli"
 #+end_src
+
+: brew install pandoc
+Does this install the CLI as well? Presumably?
+
 **** DONE COMMENT latex
 Replaced with Homebrew.
 
