@@ -1,12 +1,17 @@
 #+title: Basics
+:PROPERTIES:
+#+PROPERTY: header-args    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
+#+PROPERTY: tangledir      ~/.dotfiles/
+#+STARTUP: content
+:END:
 
 Basic configurations.
 
 * DONE =bashrc.d=
-** =bashrc=
 :properties:
 :tangledir: ~/
 :end:
+** =bashrc=
 
 - [ ] Split this up?
   basics; containers; bling
@@ -88,3 +93,22 @@ export EDITOR=emacsclient
 
 - [ ] Also see =toolboxes.org=
 [[file:toolboxes.org::*femacs integration with Homebrew =.bashrc.d=][femacs integration with Homebrew =.bashrc.d=]]
+
+
+#+name: git.bashrc
+#+begin_src bash :mkdirp yes
+export EDITOR=emacsclient
+#+end_src
+
+Adding these lines makes vterm freak out.
+: exec "git config --global user.name \"weavermarquez\""
+: exec "git config --global user.email \"weavermarquez0@gmail.com\""
+
+** =.gitconfig=
+
+#+name: .gitconfig
+#+begin_src conf
+[user]
+	name = weavermarquez
+	email = weavermarquez0@gmail.com
+#+end_src

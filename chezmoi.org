@@ -1,4 +1,4 @@
-#+title: Walerie's Chezmoi File?
+#+title: Walerie's Chezmoi File
 #+description: The source document for Chezmoi and ~/.dotfiles related utilities.
 :PROPERTIES:
 #+PROPERTY: header-args    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
@@ -21,6 +21,7 @@ sourceDir = "~/.dotfiles"
 
 * Justfile
 * PROJ Inbox
+** TODO Set up Git Credentials
 ** Fonts =.local/share/fonts=
 - [ ] Do I want to manage ComicCode in here?
 ** NO Icons =.local/share/icons=

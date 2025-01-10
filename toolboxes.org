@@ -23,7 +23,130 @@ For general purpose computing, I set up two [[https://github.com/ublue-os/toolbo
   This is anwered on the Podman system documentation.
 :end:
 
-- [ ] Replace packages with homebrew replacements.
+** TODO Consider using =distrobox export= to export binaries? Is this wise?
+Should I export brew from bluefin-cli, then get femacs to use host brew?
+
+** TODO Replace packages with homebrew replacements.
+
+I think at this point, it might be worth considering installing an Emacs per development environment? Nearly everything other than language specific tools have been moved out to homebrew.
+
+Note on[2025-01-10 Fri]:
+*** Fedora Packages to Homebrew
+**** DONE vterm
+#+begin_src conf
+init_hooks=brew install libvterm cmake libtool
+#+end_src
+
+**** DONE vlc =is not available on brew=
+#+begin_src conf
+additional_packages="vlc"
+#+end_src
+**** DONE pdf-tools
+https://github.com/vedang/pdf-tools
+
+#+begin_src conf
+additional_packages="autoconf automake gcc libpng-devel make poppler-devel poppler-glib-devel zlib-devel pkgconf"
+#+end_src
+
+I'm not sure if this is necessary? But these packages seem to be required when building epdftools.
+
+**** KILL emacs-everywhere
+https://github.com/tecosaur/emacs-everywhere
+I am pretty sure these may be referring to packages to install or make accessible to the host.
+
+#+begin_src conf
+additional_packages="xclip xdotool xprop xwininfo"
+#+end_src
+
+In brew
+: brew install xclip xdotool
+Howevevr, xprop and xwininfo are unavailable?
+https://github.com/maxim-belkin/homebrew-xorg/blob/main/README.md
+
+: brew tap maxim-belkin/xorg
+: brew install maxim-belkin/xorg/xrandr
+**** DONE dirvish
+https://github.com/alexluigit/dirvish
+
+#+begin_src conf
+additional_packages="fd-find ImageMagick pdf-tools poppler-utils ffmpegthumbnailer mediainfo tar unzip"
+#+end_src
+
+In brew
+: brew install coreutils fd imagemagick poppler ffmpegthumbnailer mediainfo
+
+**** TODO python lsp
+https://docs.doomemacs.org/v21.12/modules/lang/python/
+#+begin_src conf
+additional_packages="python-pip"
+additional_packages="pytest python-nose python-black"
+additional_packages="pyflakes python-isort"
+#+end_src
+
+- [ ] enable basedpyright
+# init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/basedpyright;
+# pip install basedpyright
+
+Still needs nose, flakes,
+: brew install pytest black isort
+
+**** lsp-bridge
+#+begin_src conf
+additional_packages="python-epc python-orjson python-sexpdata"
+additional_packages="python-six python-setuptools python-paramiko"
+additional_packages="python3-rapidfuzz python-watchdog"
+#+end_src
+
+
+**** DONE dictionary and prose
+Offline Dictionary
+https://docs.doomemacs.org/v21.12/modules/tools/lookup/
+#+begin_src conf
+additional_packages="wordnet proselint"
+#+end_src
+
+: brew install wordnet proselint
+**** sqlite
+Dash Docsets, Org-Roam
+#+begin_src conf
+additional_packages="sqlite"
+#+end_src
+
+: brew install sqlite
+**** DONE debugger
+https://docs.doomemacs.org/v21.12/modules/tools/debugger/
+#+begin_src conf
+additional_packages="lldb gdb"
+# missing lldb-mi, much must be compiled
+#+end_src
+
+: brew install lldb gdb
+**** DONE pandoc
+#+begin_src conf
+additional_packages="pandoc pandoc-cli"
+#+end_src
+
+: brew install pandoc
+Does this install the CLI as well? Presumably?
+
+**** DONE COMMENT latex
+Replaced with Homebrew.
+
+#+begin_src conf
+additional_packages="texlive-scheme-full"
+#+end_src
+
+: brew install texlive
+
+**** DONE other useful packages
+undo compression, direnv
+#+begin_src conf
+additional_packages="zstd direnv"
+#+end_src
+
+: brew install zstd direnv
+
+
 
 ** TODO Identify which packages above should be installed on Homebrew instead.
 
@@ -177,7 +300,6 @@ This file is *not* a configuration for Doom Emacs! Rather, this configuration is
 - integration with the host & other containers
   - Desktop files
 
-
 ** Why =distrobox assemble= and not quadlet?
 
 In order to use a Quadlet for femacs, I would have to layer on top of uBlue's =fedora-distrobox= in order to get the packages I want. However, since this is a pet container, I want to install a lot of packages, which would waste a lot of bandwidth and compute if I also had nightly rebuilds.
@@ -224,40 +346,71 @@ start_now=true
 additional_packages="emacs fd-find python-pip nodejs"
 #+end_src
 
-*** Access homebrew through =bluefin-cli=
+*** Access packages installed thru =bluefin-cli= and =brew=
+In my current =femacs=, I set it so that I mounted the =.linuxbrew= folder, not =Cellar=.
+
+- [ ] How do I uninstall brew from Host?
+- [ ] Change this back to =Cellar= after testing
+  - =bluefin-cli= exported ~brew~ to host
+  - and then =ln -s distrobox-host-exec= on femacs to access "host" brew.
+
 #+begin_src conf
-volume="${HOME}/.local/share/bluefin-cli/bluefin/.linuxbrew/Cellar/:/home/linuxbrew/.linuxbrew/Cellar"
+# volume="${HOME}/.local/share/bluefin-cli/bluefin/.linuxbrew/Cellar/:/home/linuxbrew/.linuxbrew/Cellar"
+volume="${HOME}/.local/share/bluefin-cli/bluefin/.linuxbrew/:/home/linuxbrew/.linuxbrew/"
 #+end_src
 
 We don't use a named podman volume because bluefin already saves to a specific folder on home drive.
 : volume=systemd-bluefin-cli-Cellar:/home/linuxbrew/.linuxbrew/Cellar
 
 *** Fedora Packages
-**** vterm
+**** DONE vterm
 #+begin_src conf
 additional_packages="libvterm cmake libtool"
 #+end_src
+: brew install libvterm cmake libtool
 
-**** vlc =is not available on brew=
+**** DONE vlc =is not available on brew=
 #+begin_src conf
 additional_packages="vlc"
 #+end_src
-**** pdf-tools
+**** DONE pdf-tools
+https://github.com/vedang/pdf-tools
+
 #+begin_src conf
 additional_packages="autoconf automake gcc libpng-devel make poppler-devel poppler-glib-devel zlib-devel pkgconf"
 #+end_src
 
-**** emacs-everywhere
+I'm not sure if this is necessary? But these packages seem to be required when building epdftools.
+
+**** KILL emacs-everywhere
+https://github.com/tecosaur/emacs-everywhere
+I am pretty sure these may be referring to packages to install or make accessible to the host.
+
 #+begin_src conf
 additional_packages="xclip xdotool xprop xwininfo"
 #+end_src
-**** dirvish
+
+In brew
+: brew install xclip xdotool
+Howevevr, xprop and xwininfo are unavailable?
+https://github.com/maxim-belkin/homebrew-xorg/blob/main/README.md
+
+: brew tap maxim-belkin/xorg
+: brew install maxim-belkin/xorg/xrandr
+**** DONE dirvish
+https://github.com/alexluigit/dirvish
+
 #+begin_src conf
-additional_packages="poppler-utils ffmpegthumbnailer mediainfo ImageMagick"
+additional_packages="fd-find ImageMagick pdf-tools poppler-utils ffmpegthumbnailer mediainfo tar unzip"
 #+end_src
+
+In brew
+: brew install coreutils fd imagemagick poppler ffmpegthumbnailer mediainfo
+
 **** TODO python lsp
 https://docs.doomemacs.org/v21.12/modules/lang/python/
 #+begin_src conf
+additional_packages="python-pip"
 additional_packages="pytest python-nose python-black"
 additional_packages="pyflakes python-isort"
 #+end_src
@@ -315,11 +468,16 @@ Replaced with Homebrew.
 additional_packages="texlive-scheme-full"
 #+end_src
 
-**** other useful packages
+: brew install texlive
+
+**** DONE other useful packages
 undo compression, direnv
 #+begin_src conf
 additional_packages="zstd direnv"
 #+end_src
+
+: brew install zstd direnv
+
 *** Init Hooks
 **** COMMENT Replace Shell
 This seems wholly unnecessary. Both are symlinks to =bash= anyways.
