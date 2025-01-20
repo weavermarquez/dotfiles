@@ -556,6 +556,42 @@ Integration with:
 
 There is a dependency to the Doom Icons in =~/.config/doom/icons/emacs.svg= , =doomstache.png=, =doom.png=
 
+*** =.org= mimetype
+:properties:
+:tangledir: ~/.local/share/mime/packages/
+:end:
+[[https://help.gnome.org/admin/system-admin-guide/stable/mime-types-custom-user.html.en][source]]
+
+Alternatively, tangle to this for system wide changes.
+- user specific :: =~/.local/share/mime/packages/org.xml=
+- system wide :: =/usr/share/mime/packages/org.xml=
+
+Then, add this this to my emacs .desktop files
+: text/org
+: MimeType=text/org
+
+Update the MIME and application database for changes to take effect.
+: $ update-mime-database ~/.local/share/mime
+
+Then set emacs as the default text editor.
+#+begin_src bash :tangle no
+xdg-mime default emacs.desktop text/org
+#+end_src
+
+#+RESULTS:
+
+#+name: text-org.xml
+#+begin_src xml :mkdirp yes
+<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+  <mime-type type="text/org">
+    <comment>Emacs Org-mode File</comment>
+    <glob pattern="*.org"/>
+    <alias type="text/org"/>
+  </mime-type>
+</mime-info>
+#+end_src
+
 *** emacs
 
 #+name: emacs.desktop
@@ -564,7 +600,7 @@ There is a dependency to the Doom Icons in =~/.config/doom/icons/emacs.svg= , =d
 Name=Emacs (on femacs)
 GenericName=Text Editor (on femacs)
 Comment=Edit text
-MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+MimeType=text/org;text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
 Exec=/usr/bin/distrobox-enter  -n femacs  --   emacs-desktop  %F
 Icon=/var/home/kwalerie/.config/doom/icons/emacs.svg
 Type=Application
@@ -582,6 +618,8 @@ GenericName=Text Editor (on femacs)
 Comment=Edit text
 Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --eval "(emacs-everywhere)"
 Icon=/var/home/kwalerie/.config/doom/icons/doomstache.png
+
+: MimeType=text/org
 Type=Application
 Terminal=false
 Categories=Development;TextEditor;
@@ -595,7 +633,7 @@ StartupWMClass=Emacs
 Name=Emacs Client (on femacs)
 GenericName=Text Editor (on femacs)
 Comment=Edit text
-MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+MimeType=text/org;text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
 Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --no-wait --reuse-frame --alternate-editor="" %F
 Icon=/var/home/kwalerie/.config/doom/icons/doom.png
 Type=Application
@@ -604,20 +642,9 @@ Categories=Development;TextEditor;
 StartupNotify=true
 StartupWMClass=Emacs
 #+end_src
-*** TODO femacs integration with Homebrew =.bashrc.d=
-:properties:
-:tangledir: ~/.bashrc.d/
-:end:
-
-I want this to be included in =femacs=.
-This modifies the PATH. Should I fix that instead of using the approach in [[file:chezmoi.org::*=bashrc=][=bashrc=]] where detected if we were in =femacs= then modified path?
-
-#+name: brew.bashrc
-#+begin_src bash
-#!/usr/bin/env bash
-[[ -d /home/linuxbrew/.linuxbrew && $- == *i* ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-#+end_src
-** Femacs maintenance
+** COMMENT Femacs maintenance
+*** Bashrc
+[[file:basics.org::*=bashrc.d=][=bashrc.d=]]
 *** Doom Emacs' Env and PATH
 
 [[*femacs PATH and env][femacs PATH and env]]
