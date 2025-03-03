@@ -1,0 +1,345 @@
+#+title: Frappe Deployment with Quadlets, but not in a Pod
+
+** Frappe Pod
+CLOSED: [2025-02-20 Thu 13:53]
+#+begin_src conf
+    :tangle frappe.pod
+[Unit]
+Description=ERPNext Pod
+
+[Pod]
+PodName=erpnext
+#+end_src
+
+#+begin_src conf :tangle coffee.network
+[Network]
+NetworkName=coffee
+#+end_src
+This enables all of the containers connected to this network connect to each other.
+
+- [ ] Configue CustomApps Build
+#+begin_src conf :tangle erpnext.build
+[Build]
+# Image=docker.io/frappe/erpnext:v15.53.0
+# Tag the image to be built
+ImageTag=localhost/imagename
+
+# Set the working directory to the path of the unit file,
+# expecting to find a Containerfile/Dockerfile
+# + other files needed to build the image
+SetWorkingDirectory=unit
+#+end_src
+
+#+begin_src conf :tangle erpnext.image
+[Image]
+Image=docker.io/frappe/erpnext:v15.53.0
+#+end_src
+** TODO MariaDB
+#+begin_src conf :tangle db.env
+MYSQL_ROOT_PASSWORD=Feline.Verbose.Elite.Rocking4.Bleep.Tastiness
+#+end_src
+
+#+begin_src conf :tangle db.volume
+[Volume]
+VolumeName=frappe-db-data
+#+end_src
+
+#+begin_src conf :tangle erpnext-db.container
+[Container]
+Network=coffee.network
+Image=docker.io/library/mariadb:10.6
+ContainerName=erpnext-db
+Volume=db.volume:/var/lib/mysql
+EnvironmentFile=db.env
+# HealthCmd=mariadb-admin -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD ping
+# HealthCmd=mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD
+# HealthInterval=2s
+# HealthRetries=5
+Exec=--character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --skip-character-set-client-handshake --skip-innodb-read-only-compressed
+# Notify=healthy
+Notify=true
+
+[Service]
+Restart=on-failure
+RestartSec=1
+RestartSteps=0.5
+RestartMaxDelaySec=5
+#+end_src
+
+=Notify= [[https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#notify-defaults-to-false][postpones startness until healthcheck declares healthy]]
+
+** DONE Redis Cache and Queue
+CLOSED: [2025-02-20 Thu 13:52]
+
+#+begin_src conf :tangle redis.image
+[Image]
+Image=docker.io/library/redis:6.2-alpine
+#+end_src
+
+#+begin_src conf :tangle redis-cache.container
+[Container]
+Network=coffee.network
+Image=redis.image
+ContainerName=redis-cache
+
+[Service]
+Restart=on-failure
+RestartSec=1
+RestartSteps=0.5
+RestartMaxDelaySec=5
+#+end_src
+
+#+begin_src conf :tangle redis-queue.volume
+[Volume]
+VolumeName=redis-queue-data
+#+end_src
+
+#+begin_src conf :tangle redis-queue.container
+[Container]
+Network=coffee.network
+Image=redis.image
+ContainerName=redis-queue
+Volume=redis-queue.volume:/data
+
+[Service]
+Restart=on-failure
+RestartSec=1
+RestartSteps=0.5
+RestartMaxDelaySec=5
+#+end_src
+
+*** TODO Fix Cache/Queue occupying the same port.
+
+PublishPort=6379:6379
+PublishPort=6380:6379
+
+** DONE Configurator
+CLOSED: [2025-02-20 Thu 14:29]
+#+begin_src conf :tangle configurator.env
+DB_HOST=erpnext-db
+DB_PORT=3306
+REDIS_CACHE=redis-cache:6379
+REDIS_QUEUE=redis-queue:6379
+SOCKETIO_PORT=9000
+#+end_src
+
+#+begin_src conf :tangle sites.volume
+[Volume]
+VolumeName=frappe-db-sites
+#+end_src
+
+#+begin_src conf :tangle configurator.container
+[Container]
+Image=erpnext.image
+ContainerName=configurator
+EnvironmentFile=configurator.env
+Pull=newer
+Volume=sites.volume:/home/frappe/frappe-bench/sites
+
+Exec=bash -c "ls -1 apps > sites/apps.txt; bench set-config -g db_host $DB_HOST; bench set-config -gp db_port $DB_PORT; bench set-config -g redis_cache \"redis://$REDIS_CACHE\"; bench set-config -g redis_queue \"redis://$REDIS_QUEUE\"; bench set-config -g redis_socketio \"redis://$REDIS_QUEUE\"; bench set-config -gp socketio_port $SOCKETIO_PORT;"
+
+[Unit]
+After=erpnext-db.service redis-cache.service redis-queue.service
+Requires=erpnext-db.service redis-cache.service redis-queue.service
+
+[Service]
+Type=oneshot
+Restart=on-failure
+RemainAfterExit=yes
+RestartSec=1
+RestartSteps=0.5
+RestartMaxDelaySec=5
+#+end_src
+
+RemainAfterExit makes it so that the service is considered started once the process has exited.
+
+NOTE: To express dependencies between containers, use the generated names of the service. In other words WantedBy=other.service, not WantedBy=other.container. The same is true for other kinds of dependencies, too, like After=other.service.
+** DONE Backend
+CLOSED: [2025-02-20 Thu 14:45]
+
+#+begin_src conf :tangle backend.container
+[Container]
+Image=erpnext.image
+ContainerName=backend
+Volume=sites.volume:/home/frappe/frappe-bench/sites
+Pull=newer
+Network=coffee.network
+
+
+[Unit]
+After=configurator.service
+Requires=configurator.service
+
+[Service]
+Restart=on-failure
+RestartSec=1
+RestartSteps=0.5
+RestartMaxDelaySec=5
+
+[Install]
+# Note, the container can still be started manually or through a target by configuring the [Install] section. The pod will be started as needed in any case.
+#+end_src
+** TODO Frontend
+
+#+begin_src conf :tangle frontend.env
+BACKEND=backend:8000
+CLIENT_MAX_BODY_SIZE=50m
+FRAPPE_SITE_NAME_HEADER=$host
+PROXY_READ_TIMEOUT=120
+SOCKETIO=websocket:9000
+UPSTREAM_REAL_IP_ADDRESS=127.0.0.1
+UPSTREAM_REAL_IP_HEADER=X-Forwarded-For
+UPSTREAM_REAL_IP_RECURSIVE=off
+#+end_src
+
+- [ ] Confirm that these have been appropriately translated from YAML
+  #+begin_quote
+    environment:
+      BACKEND: backend:8000
+      CLIENT_MAX_BODY_SIZE: 50m
+      FRAPPE_SITE_NAME_HEADER: $$host
+      PROXY_READ_TIMEOUT: "120"
+      SOCKETIO: websocket:9000
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+  #+end_quote
+
+#+begin_src conf :tangle frontend.container
+[Container]
+Image=erpnext.image
+ContainerName=frontend
+Volume=sites.volume:/home/frappe/frappe-bench/sites
+PublishPort=8080:8080
+EnvironmentFile=frontend.env
+Pull=newer
+Entrypoint=nginx-entrypoint.sh
+Network=coffee.network
+
+[Unit]
+After=backend.service websocket.service
+# Requires=backend.service websocket.service
+
+[Service]
+Restart=on-failure
+RestartSec=1
+RestartSteps=0.5
+RestartMaxDelaySec=5
+#+end_src
+I don't think Frontend =Requires= backend/websocket.
+- [ ] Should I move PublishPort to the Pod?
+- [ ] Confirm if I got the right entrypoint.
+
+** TODO Websocket
+
+Currently, this isn't working because it's not connecting to both Redis.
+
+#+begin_src conf :tangle websocket.container
+[Container]
+Image=erpnext.image
+ContainerName=websocket
+Pull=newer
+Volume=sites.volume:/home/frappe/frappe-bench/sites
+Exec=node /home/frappe/frappe-bench/apps/frappe/socketio.js
+Network=coffee.network
+
+[Unit]
+After=configurator.service
+Requires=configurator.service
+
+[Service]
+Restart=on-failure
+RestartSec=1
+RestartSteps=0.5
+RestartMaxDelaySec=5
+#+end_src
+
+- [ ] Confirm Exec > Entrypoint.
+
+Would you like me to continue with the workers and scheduler containers?
+** Queue Long
+
+#+begin_src conf :tangle queue-long.container
+[Container]
+Image=erpnext.image
+Network=coffee.network
+Pull=newer
+ContainerName=queue-long
+StartWithPod=false
+Volume=sites.volume:/home/frappe/frappe-bench/sites
+Exec=bench worker --queue long,default,short
+
+[Unit]
+After=configurator.service
+Requires=configurator.service
+
+[Service]
+Restart=on-failure
+#+end_src
+
+** Queue Short
+#+begin_src conf :tangle queue-short.container
+[Container]
+Image=erpnext.image
+Network=coffee.network
+Pull=newer
+ContainerName=queue-short
+StartWithPod=false
+Volume=sites.volume:/home/frappe/frappe-bench/sites
+Exec=bench worker --queue short,default
+
+[Unit]
+After=configurator.service
+Requires=configurator.service
+
+[Service]
+Restart=on-failure
+#+end_src
+
+** Scheduler
+#+begin_src conf :tangle scheduler.container
+[Container]
+Image=erpnext.image
+Network=coffee.network
+Pull=newer
+ContainerName=scheduler
+Volume=sites.volume:/home/frappe/frappe-bench/sites
+Exec=bench schedule
+
+[Unit]
+After=configurator.service
+Requires=configurator.service
+
+[Service]
+Restart=on-failure
+#+end_src
+
+** KILL And you'll need a volume configuration:
+CLOSED: [2025-02-20 Thu 14:44]
+
+#+begin_src conf
+# erpnext-volumes.volume
+[Volume]
+Name=db-data
+Device=/var/lib/containers/storage/volumes/erpnext-db-data
+
+[Volume]
+Name=redis-queue-data
+Device=/var/lib/containers/storage/volumes/erpnext-redis-queue
+
+[Volume]
+Name=sites
+Device=/var/lib/containers/storage/volumes/erpnext-sites
+#+end_src
+
+Place these files in ~/.config/containers/systemd/ and use =systemctl --user start= to manage them.
+
+** Examine the results with a dry-run
+
+#+begin_src bash
+/usr/lib/systemd/system-generators/podman-system-generator --user --dryrun
+#+end_src
+
+Alternatively, show only the errors with:
+
+: systemd-analyze {--user} --generators=true verify example.service
