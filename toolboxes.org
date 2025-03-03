@@ -2,6 +2,7 @@
 #+description: My primary toolboxes
 :PROPERTIES:
 #+STARTUP: content
+#+category: dotfiles
 :END:
 
 For general purpose computing, I set up two [[https://github.com/ublue-os/toolboxes/][ublue toolboxes]] on my system: =bluefin-cli= and =femacs=.
