@@ -12,7 +12,7 @@ For general purpose computing, I set up two [[https://github.com/ublue-os/toolbo
 
 - =femacs= :: a ready-to-go environment for my Doom Emacs configuration. Managed via [[https://github.com/ublue-os/toolboxes/?tab=readme-ov-file#systemd-one-shots][systemd]].
 
-* TODO Inbox
+* Inbox
 :properties:
 :header-args: :tangle no
 :end:
@@ -24,25 +24,31 @@ For general purpose computing, I set up two [[https://github.com/ublue-os/toolbo
   This is anwered on the Podman system documentation.
 :end:
 
-** TODO Consider using =distrobox export= to export binaries? Is this wise?
+** IDEA Consider using =distrobox export= to export binaries? Is this wise?
 Should I export brew from bluefin-cli, then get femacs to use host brew?
 
 ** TODO Replace packages with homebrew replacements.
-
 I think at this point, it might be worth considering installing an Emacs per development environment? Nearly everything other than language specific tools have been moved out to homebrew.
 
 Note on[2025-01-10 Fri]:
+
 *** Fedora Packages to Homebrew
-**** DONE vterm
-#+begin_src conf
-init_hooks=brew install libvterm cmake libtool
+:properties:
+:header-args: :noweb-ref femacs-homebrew-packages
+:end:
+
+#+name: justfile
+#+begin_src conf :tangle ~/.dotfiles/justfile :noweb yes :noweb-ref none
+femacs-homebrew:
+    <<femacs-homebrew-packages>>
 #+end_src
 
-**** DONE vlc =is not available on brew=
+**** vterm
 #+begin_src conf
-additional_packages="vlc"
+brew install libvterm cmake libtool
 #+end_src
-**** DONE pdf-tools
+
+**** DONE COMMENT pdf-tools
 https://github.com/vedang/pdf-tools
 
 #+begin_src conf
@@ -56,7 +62,9 @@ https://github.com/tecosaur/emacs-everywhere
 I am pretty sure these may be referring to packages to install or make accessible to the host.
 
 #+begin_src conf
-additional_packages="xclip xdotool xprop xwininfo"
+brew install xclip xdotool
+brew tap maxim-belkin/xorg
+brew install maxim-belkin/xorg/xprop maxim-belkin/xorg/xwininfo
 #+end_src
 
 In brew
@@ -70,13 +78,10 @@ https://github.com/maxim-belkin/homebrew-xorg/blob/main/README.md
 https://github.com/alexluigit/dirvish
 
 #+begin_src conf
-additional_packages="fd-find ImageMagick pdf-tools poppler-utils ffmpegthumbnailer mediainfo tar unzip"
+brew install coreutils fd imagemagick poppler ffmpegthumbnailer mediainfo
 #+end_src
 
-In brew
-: brew install coreutils fd imagemagick poppler ffmpegthumbnailer mediainfo
-
-**** TODO python lsp
+**** TODO COMMENT python lsp
 https://docs.doomemacs.org/v21.12/modules/lang/python/
 #+begin_src conf
 additional_packages="python-pip"
@@ -91,63 +96,51 @@ additional_packages="pyflakes python-isort"
 Still needs nose, flakes,
 : brew install pytest black isort
 
-**** lsp-bridge
+**** COMMENT lsp-bridge
 #+begin_src conf
 additional_packages="python-epc python-orjson python-sexpdata"
 additional_packages="python-six python-setuptools python-paramiko"
 additional_packages="python3-rapidfuzz python-watchdog"
 #+end_src
 
+**** DONE COMMENT debugger
+https://docs.doomemacs.org/v21.12/modules/tools/debugger/
+#+begin_src conf
+brew install lldb gdb
+#+end_src
 
+:
 **** DONE dictionary and prose
 Offline Dictionary
 https://docs.doomemacs.org/v21.12/modules/tools/lookup/
 #+begin_src conf
-additional_packages="wordnet proselint"
+brew install wordnet proselint
 #+end_src
 
-: brew install wordnet proselint
 **** sqlite
 Dash Docsets, Org-Roam
 #+begin_src conf
-additional_packages="sqlite"
+brew install sqlite
 #+end_src
 
-: brew install sqlite
-**** DONE debugger
-https://docs.doomemacs.org/v21.12/modules/tools/debugger/
-#+begin_src conf
-additional_packages="lldb gdb"
-# missing lldb-mi, much must be compiled
-#+end_src
-
-: brew install lldb gdb
 **** DONE pandoc
 #+begin_src conf
-additional_packages="pandoc pandoc-cli"
+brew install pandoc
 #+end_src
 
-: brew install pandoc
 Does this install the CLI as well? Presumably?
 
 **** DONE COMMENT latex
 Replaced with Homebrew.
 
 #+begin_src conf
-additional_packages="texlive-scheme-full"
+brew install texlive
 #+end_src
-
-: brew install texlive
-
 **** DONE other useful packages
 undo compression, direnv
 #+begin_src conf
-additional_packages="zstd direnv"
+brew install zstd direnv
 #+end_src
-
-: brew install zstd direnv
-
-
 
 ** TODO Identify which packages above should be installed on Homebrew instead.
 
@@ -321,18 +314,18 @@ The systemd service file will automatically start up the toolbox. However, I do 
 
 *** DONE Basics
 
-|-----------+---------------------------------------------------|
-| keyword   | thoughts                                          |
-|-----------+---------------------------------------------------|
-| image     | [[https://github.com/ublue-os/toolboxes/tree/main/toolboxes/fedora-toolbox][ublue fedora-toolbox]]                              |
-| init      | I don't need systemctl in femacs                  |
-| nvidia    | I want nvidia driver integration                  |
-| pull      | I don't need to pull the image every single time  |
-| root      | This container is not rootful                     |
-| replace   | femacs should be rebuilt when there are updates   |
-| start_now | Start the container immediately                   |
-|           |                                                   |
-|-----------+---------------------------------------------------|
+|-----------+--------------------------------------------------|
+| keyword   | thoughts                                         |
+|-----------+--------------------------------------------------|
+| image     | [[https://github.com/ublue-os/toolboxes/tree/main/toolboxes/fedora-toolbox][ublue fedora-toolbox]]                             |
+| init      | I don't need systemctl in femacs                 |
+| nvidia    | I want nvidia driver integration                 |
+| pull      | I don't need to pull the image every single time |
+| root      | This container is not rootful                    |
+| replace   | femacs should be rebuilt when there are updates  |
+| start_now | Start the container immediately                  |
+|           |                                                  |
+|-----------+--------------------------------------------------|
 
 #+name: distrobox.ini
 #+begin_src conf
@@ -348,10 +341,13 @@ additional_packages="emacs fd-find python-pip nodejs"
 #+end_src
 
 *** Access packages installed thru =bluefin-cli= and =brew=
-In my current =femacs=, I set it so that I mounted the =.linuxbrew= folder, not =Cellar=.
+- To call ~brew~ from non =bluefin-cli= container :: mount the whole =.linuxbrew= folder
+- To access only installed packages (sans ~brew~) :: mount the following sub-directories =.linuxbrew=:
+  - Cellar, bin, lib, include, etc, opt, sbin, share
 
+In my current =femacs=, I set it so that I mounted the =.linuxbrew= folder, not =Cellar=.
 - [ ] How do I uninstall brew from Host?
-- [ ] Change this back to =Cellar= after testing
+- [ ] steps to mount subdirectories after exporting binary:
   - =bluefin-cli= exported ~brew~ to host
   - and then =ln -s distrobox-host-exec= on femacs to access "host" brew.
 
@@ -523,7 +519,7 @@ Description=Fedora Toolbox for your distrobox fun
 I removed this below line because turns out I don't need a separate volume. But it's useful to know that I can do that.
 : Wants=systemd-bluefin-cli-Cellar
 
-*** service
+*** TODO service
 
 For systemd service files, you have to use =%h= instead of =~=.
 ExecStart=/usr/bin/distrobox assemble create --file %h/.config/containers/distrobox.ini -n femacs
@@ -535,9 +531,9 @@ Type=oneshot
 ExecStart=/usr/bin/distrobox assemble create --file %h/.config/systemd/user/distrobox.ini -n femacs
 ExecStart=/usr/bin/distrobox enter femacs
 RemainAfterExit=true
-Restart=always
 #+end_src
 
+- [ ] : #Restart=always
 *** install
 Start by default on boot.
 #+name: femacs-install
@@ -655,3 +651,141 @@ StartupWMClass=Emacs
 #+end_src
 
 Oh, okay, all I needed was to run ~doom env~ with my desired shell environment.
+* lem toolbox
+** Distrobox Assemble File =distrobox.ini=
+:properties:
+:header-args: :tangle ~/.config/systemd/user/distrobox.ini
+:end:
+:sources:
+[[https://github.com/89luca89/distrobox/blob/main/docs/usage/distrobox-assemble.md][manual - distrobox assemble]]
+:end:
+
+*** DONE Basics
+
+|-----------+--------------------------------------------------|
+| keyword   | thoughts                                         |
+|-----------+--------------------------------------------------|
+| image     | [[https://github.com/ublue-os/toolboxes/tree/main/toolboxes/fedora-toolbox][ublue fedora-toolbox]]                             |
+| init      | I don't need systemctl in femacs                 |
+| nvidia    | I want nvidia driver integration                 |
+| pull      | I don't need to pull the image every single time |
+| root      | This container is not rootful                    |
+| replace   | femacs should be rebuilt when there are updates  |
+| start_now | Start the container immediately                  |
+|           |                                                  |
+|-----------+--------------------------------------------------|
+
+#+name: distrobox.ini
+#+begin_src conf
+[lemming]
+image=ghcr.io/ublue-os/fedora-toolbox:latest
+init=false
+nvidia=true
+pull=false
+root=false
+replace=false
+start_now=true
+additional_packages="sbcl SDL2-devel SDL2_image-devel SDL2_ttf-devel"
+additional_packages="gcc-c++ libstdc++-devel"
+additional_packages="autoconf automake bison byacc ccache cscope ctags elfutils flex gdb indent libtool"
+additional_packages="ltrace perf strace valgrind"
+additional_packages="diffstat doxygen gettext patch patchutils subversion systemtap"
+additional_packages="redhat-rpm-config"
+#+end_src
+
+: dnf group install c-development development-tools
+
+*** Access packages installed thru =bluefin-cli= and =brew=
+- To call ~brew~ from non =bluefin-cli= container :: mount the whole =.linuxbrew= folder
+- To access only installed packages (sans ~brew~) :: mount the following sub-directories =.linuxbrew=:
+  - Cellar, bin, lib, include, etc, opt, sbin, share
+
+In my current =femacs=, I set it so that I mounted the =.linuxbrew= folder, not =Cellar=.
+- [ ] How do I uninstall brew from Host?
+- [ ] steps to mount subdirectories after exporting binary:
+  - =bluefin-cli= exported ~brew~ to host
+  - and then =ln -s distrobox-host-exec= on femacs to access "host" brew.
+
+#+begin_src conf
+# volume="${HOME}/.local/share/bluefin-cli/bluefin/.linuxbrew/Cellar/:/home/linuxbrew/.linuxbrew/Cellar"
+volume="${HOME}/.local/share/bluefin-cli/bluefin/.linuxbrew/:/home/linuxbrew/.linuxbrew/"
+#+end_src
+
+We don't use a named podman volume because bluefin already saves to a specific folder on home drive.
+: volume=systemd-bluefin-cli-Cellar:/home/linuxbrew/.linuxbrew/Cellar
+
+*** COMMENT Init Hooks
+**** COMMENT Replace Shell
+This seems wholly unnecessary. Both are symlinks to =bash= anyways.
+
+#+begin_src conf :tangle no
+init_hooks=ln -fs /bin/sh /usr/bin/sh;
+curl -L https://qlot.tech/installer | bash
+#+end_src
+
+**** Host Utilities
+
+Linking to =distrobox-host-exec= is a convenient way to call programs only accessible through the host.
+
+#+begin_src conf
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/docker;
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/flatpak;
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/podman;
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/rpm-ostree;
+init_hooks=ln -fs /usr/bin/distrobox-host-exec /usr/local/bin/transactional-update;
+
+init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/conmon;
+init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/crun;
+init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/docker-compose;
+init_hooks=ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/xdg-open;
+#+end_src
+** Distrobox systemd =lemming-distrobox.service=
+:properties:
+:header-args: :tangle ~/.config/systemd/user/lemming-distrobox.service
+:end:
+
+When I want to re-install femacs, call ~distrobox assemble rm --file /my/custom/distrobox.ini~ before ~systemctl --user daemon-reload~ and ~systemctl --user start femacs-distrobox.service~
+
+- [ ] Figure out what I can delegate out from here and into bluefin-cli.
+- [ ] Q :: Why does [[https://github.com/ublue-os/toolboxes/blob/main/systemd/bluefin-cli/bluefin-cli-distrobox-oneshot.service][this bluefin-cli oneshot]] refer to =bluefin-cli-Cellar=
+  But the =distrobox.ini= refers to =systemd-bluefin-cli-Cellar=
+*** user
+#+name: lemming-unit
+#+begin_src conf
+[Unit]
+Description=Fedora Toolbox for your distrobox fun
+#+end_src
+
+I removed this below line because turns out I don't need a separate volume. But it's useful to know that I can do that.
+: Wants=systemd-bluefin-cli-Cellar
+
+*** service
+
+For systemd service files, you have to use =%h= instead of =~=.
+ExecStart=/usr/bin/distrobox assemble create --file %h/.config/containers/distrobox.ini -n femacs
+
+#+name: lemming-service
+#+begin_src conf
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/distrobox assemble create --file %h/.config/systemd/user/distrobox.ini -n lemming
+ExecStart=/usr/bin/distrobox enter lemming
+RemainAfterExit=true
+#+end_src
+
+*** install
+Start by default on boot.
+#+name: lemming-install
+#+begin_src conf
+[Install]
+WantedBy=multi-user.target default.target
+#+end_src
+** Installing Lem
+
+https://lem-project.github.io/installation/sdl2/linux/
+
+#+begin_src bash :tangle no
+cd $HOME/src
+git clone https://github.com/lem-project/lem.git
+cd lem && make sdl2
+#+end_src
