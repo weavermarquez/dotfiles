@@ -1,5 +1,22 @@
 #+title: Frappe Deployment with Quadlets, but not in a Pod
 
+** uCore Information
+https://github.com/ublue-os/ucore?tab=readme-ov-file#ucore
+
+
+For PCP, install Grafana
+: systemctl enable --now pmproxy valkey
+
+3000
+
+** TODO Fixing Configurator
+Involves moving away from using =Image=erpnext.image=
+- Simply renaming all the =erpnext.image= stuff to =localhost/custom:15=. The generated systemd files seem to work properly
+
+- [ ] Or fixing the resolution of =localhost/custom:15= but that seems to be tricky. I can see that ~podman pull localhost/custom:15~ doesn't work properly.
+  This would probably involve the container registry?
+
+
 ** Frappe Pod
 CLOSED: [2025-02-20 Thu 13:53]
 #+begin_src conf
@@ -34,6 +51,9 @@ SetWorkingDirectory=unit
 [Image]
 Image=docker.io/frappe/erpnext:v15.53.0
 #+end_src
+
+*** TODO Set up a network for Frontend that exposes lynxbox's 8081 port.
+
 ** TODO MariaDB
 #+begin_src conf :tangle db.env
 MYSQL_ROOT_PASSWORD=Feline.Verbose.Elite.Rocking4.Bleep.Tastiness
@@ -108,7 +128,7 @@ RestartSteps=0.5
 RestartMaxDelaySec=5
 #+end_src
 
-*** TODO Fix Cache/Queue occupying the same port.
+*** TODO Fix Cache/Queue occupying the same port in a Pod.
 
 PublishPort=6379:6379
 PublishPort=6380:6379
@@ -130,7 +150,7 @@ VolumeName=frappe-db-sites
 
 #+begin_src conf :tangle configurator.container
 [Container]
-Image=erpnext.image
+Image=localhost/custom:15
 ContainerName=configurator
 EnvironmentFile=configurator.env
 Pull=newer
@@ -147,19 +167,21 @@ Type=oneshot
 Restart=on-failure
 RemainAfterExit=yes
 RestartSec=1
-RestartSteps=0.5
+RestartSteps=1
 RestartMaxDelaySec=5
 #+end_src
 
 RemainAfterExit makes it so that the service is considered started once the process has exited.
 
 NOTE: To express dependencies between containers, use the generated names of the service. In other words WantedBy=other.service, not WantedBy=other.container. The same is true for other kinds of dependencies, too, like After=other.service.
+
+Also, NEVER use =RestartSteps=0.5=
 ** DONE Backend
 CLOSED: [2025-02-20 Thu 14:45]
 
 #+begin_src conf :tangle backend.container
 [Container]
-Image=erpnext.image
+Image=localhost/custom:15
 ContainerName=backend
 Volume=sites.volume:/home/frappe/frappe-bench/sites
 Pull=newer
@@ -179,7 +201,9 @@ RestartMaxDelaySec=5
 [Install]
 # Note, the container can still be started manually or through a target by configuring the [Install] section. The pod will be started as needed in any case.
 #+end_src
-** TODO Frontend
+** PROJ [#A] Frontend
+DEADLINE: <2025-03-26 Wed>
+
 
 #+begin_src conf :tangle frontend.env
 BACKEND=backend:8000
@@ -192,7 +216,7 @@ UPSTREAM_REAL_IP_HEADER=X-Forwarded-For
 UPSTREAM_REAL_IP_RECURSIVE=off
 #+end_src
 
-- [ ] Confirm that these have been appropriately translated from YAML
+- [X] Confirm that these have been appropriately translated from YAML
   #+begin_quote
     environment:
       BACKEND: backend:8000
@@ -207,10 +231,10 @@ UPSTREAM_REAL_IP_RECURSIVE=off
 
 #+begin_src conf :tangle frontend.container
 [Container]
-Image=erpnext.image
+Image=localhost/custom:15
 ContainerName=frontend
 Volume=sites.volume:/home/frappe/frappe-bench/sites
-PublishPort=8080:8080
+PublishPort=8081:8080
 EnvironmentFile=frontend.env
 Pull=newer
 Entrypoint=nginx-entrypoint.sh
@@ -229,14 +253,26 @@ RestartMaxDelaySec=5
 I don't think Frontend =Requires= backend/websocket.
 - [ ] Should I move PublishPort to the Pod?
 - [ ] Confirm if I got the right entrypoint.
+*** DONE Modify =frontend.env= to serve via valeriekim.ca
+CLOSED: [2025-03-26 Wed 16:37]
 
+Deepseek:
+#+begin_quote
+Yes, you should set =UPSTREAM_REAL_IP_ADDRESS= to your server's public IP if it's directly exposed. This ensures Nginx trusts the X-Forwarded-For header from your server's IP. If behind a proxy/load balancer (e.g., Cloudflare), use their IP ranges instead.
+
+For a single server setup, your public IP is correct. Keep =real_ip_recursive=off= unless you have multiple proxies.
+#+end_quote
+
+*** DONE Create a site with =backend= that resolves to host.
+CLOSED: [2025-03-26 Wed 16:37]
+FRAPPE_SITE_NAME_HEADER to the existing =site= folder.
 ** TODO Websocket
 
 Currently, this isn't working because it's not connecting to both Redis.
 
 #+begin_src conf :tangle websocket.container
 [Container]
-Image=erpnext.image
+Image=localhost/custom:15
 ContainerName=websocket
 Pull=newer
 Volume=sites.volume:/home/frappe/frappe-bench/sites
@@ -261,7 +297,7 @@ Would you like me to continue with the workers and scheduler containers?
 
 #+begin_src conf :tangle queue-long.container
 [Container]
-Image=erpnext.image
+Image=localhost/custom:15
 Network=coffee.network
 Pull=newer
 ContainerName=queue-long
@@ -280,7 +316,7 @@ Restart=on-failure
 ** Queue Short
 #+begin_src conf :tangle queue-short.container
 [Container]
-Image=erpnext.image
+Image=localhost/custom:15
 Network=coffee.network
 Pull=newer
 ContainerName=queue-short
@@ -299,7 +335,7 @@ Restart=on-failure
 ** Scheduler
 #+begin_src conf :tangle scheduler.container
 [Container]
-Image=erpnext.image
+Image=localhost/custom:15
 Network=coffee.network
 Pull=newer
 ContainerName=scheduler
