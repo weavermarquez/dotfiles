@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=Emacs Client Default (on femacs)
+Name=Emacs (on femacs)
 GenericName=Text Editor (on femacs)
 Comment=Edit text
 MimeType=text/org;text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
-Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --no-wait --reuse-frame --alternate-editor="emacs --daemon --profile default" %F
-Icon=/var/home/kwalerie/.config/doom/icons/doom.png
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacs-desktop --profile ews %F
+Icon=/var/home/kwalerie/.config/doom/icons/emacs.svg
 Type=Application
 Terminal=false
 Categories=Development;TextEditor;

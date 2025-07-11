@@ -9,7 +9,12 @@ For PCP, install Grafana
 
 3000
 
-** TODO Fixing Configurator
+** TODO Draw a Dependency Graph and impleent it, then find out how to enable containers on boot.
+
+** TODO Set up a single server example with Docker. Enable =dockerd= and just get the god damn server up SMH my head.
+
+** DONE Fixing Configurator
+CLOSED: [2025-04-02 Wed 11:58]
 Involves moving away from using =Image=erpnext.image=
 - Simply renaming all the =erpnext.image= stuff to =localhost/custom:15=. The generated systemd files seem to work properly
 
