@@ -551,7 +551,7 @@ Integration with:
 - GNOME Application Shortcuts
 - bashrc
 
-There is a dependency to the Doom Icons in =~/.config/doom/icons/emacs.svg= , =doomstache.png=, =doom.png=
+There is a dependency to the Doom Icons in =~/.config/doom/assets/emacs.svg= , =doomstache.png=, =doom.png=
 
 *** =.org= mimetype
 :properties:
@@ -598,8 +598,8 @@ Name=Emacs (on femacs)
 GenericName=Text Editor (on femacs)
 Comment=Edit text
 MimeType=text/org;text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
-Exec=/usr/bin/distrobox-enter  -n femacs  --   emacs-desktop  --profile default %F
-Icon=/var/home/kwalerie/.config/doom/icons/emacs.svg
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacs-desktop  %F
+Icon=/var/home/kwalerie/.config/doom/assets/emacs.svg
 Type=Application
 Terminal=false
 Categories=Development;TextEditor;
@@ -614,7 +614,7 @@ Name=Emacs Everywhere (on femacs)
 GenericName=Text Editor (on femacs)
 Comment=Edit text
 Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --eval "(emacs-everywhere)"
-Icon=/var/home/kwalerie/.config/doom/icons/doomstache.png
+Icon=/var/home/kwalerie/.config/doom/assets/doomstache.png
 
 : MimeType=text/org
 Type=Application
@@ -631,8 +631,59 @@ Name=Emacs Client (on femacs)
 GenericName=Text Editor (on femacs)
 Comment=Edit text
 MimeType=text/org;text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --no-wait --reuse-frame --alternate-editor="" %F
+Icon=/var/home/kwalerie/.config/doom/assets/doom.png
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+*** "Default" Profile version
+**** COMMENT emacs
+
+#+name: emacs.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+MimeType=text/org;text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacs-desktop  --profile default %F
+Icon=/var/home/kwalerie/.config/doom/assets/emacs.svg
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+**** COMMENT emacs-everywhere
+#+name: emacs-everywhere.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs Everywhere (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --eval "(emacs-everywhere)"
+Icon=/var/home/kwalerie/.config/doom/assets/doomstache.png
+
+: MimeType=text/org
+Type=Application
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
+StartupWMClass=Emacs
+#+end_src
+**** COMMENT emacsclient
+#+name: emacsclient.desktop
+#+begin_src conf
+[Desktop Entry]
+Name=Emacs Client (on femacs)
+GenericName=Text Editor (on femacs)
+Comment=Edit text
+MimeType=text/org;text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
 Exec=/usr/bin/distrobox-enter  -n femacs  --   emacsclient --no-wait --reuse-frame --alternate-editor="emacs --daemon --profile default" %F
-Icon=/var/home/kwalerie/.config/doom/icons/doom.png
+Icon=/var/home/kwalerie/.config/doom/assets/doom.png
 Type=Application
 Terminal=false
 Categories=Development;TextEditor;
