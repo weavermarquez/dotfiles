@@ -1,0 +1,18 @@
+[user]
+  name = weavermarquez
+	email = weavermarquez0@gmail.com
+[core]
+  excludesfile = ~/.config/git/ignore
+  attributesfile = ~/.config/git/attributes
+[merge]
+  conflictstyle = diff3
+[pull]
+  rebase = false
+[format]
+  thread = true
+[diff "lisp"]
+  xfuncname = "^(((;;;+ )|\\(|([ \t]+\\(((cl-|el-patch-)?def(un|var|macro|method|custom)|gb/))).*)$"
+[diff "org"]
+   xfuncname = "^(\\*+ +.*|#\\+title:.*)$"
+[github]
+	user = weavermarquez

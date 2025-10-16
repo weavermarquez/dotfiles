@@ -3,6 +3,7 @@
 :PROPERTIES:
 #+PROPERTY: header-args    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
 #+PROPERTY: tangledir      ~/.dotfiles/
+#+category: dotfiles
 #+STARTUP: content
 :END:
 

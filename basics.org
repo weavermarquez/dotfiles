@@ -2,6 +2,7 @@
 :PROPERTIES:
 #+PROPERTY: header-args    :tangle (concat (org-entry-get nil "tangledir" t) (org-element-property :name (org-element-at-point)))
 #+PROPERTY: tangledir      ~/.dotfiles/
+#+category: dotfiles
 #+STARTUP: content
 :END:
 
@@ -25,9 +26,6 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
-# Uncomment the following line if you don't like systemctl's auto-paging feature:
-# export SYSTEMD_PAGER=
-
 # User specific aliases and functions
 if [ -d ~/.bashrc.d ]; then
 	for rc in ~/.bashrc.d/*; do
@@ -43,61 +41,82 @@ stty stop undef 2>/dev/null; stty start undef 2>/dev/null
 [[ -f /usr/share/bash-prexec ]] && source /usr/share/bash-prexec
 
 # User specific environment and startup programs
+export PATH
 
-# If not in a container
-#if [ ! -e /run/.containerenv ] && [ ! -e /.dockerenv ]; then ... fi
-# Homebrew is set up elsewhere.
-
-# Container specific configs
-if [ -f /run/.toolboxenv ]; then
-    source /run/.containerenv
-    # Distrobox also already has $CONTAINER_ID
-
-    if [[ $name = "femacs" ]]; then
-        export PATH="${PATH}:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin"
-    fi
-fi
-
-# PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
-
-#        function command_not_found_handle() {
-#        # don't run if not in a container
-#            if [ ! -e /run/.containerenv ] && [ ! -e /.dockerenv ]; then
-#            # mommy -s 127
-#            exit 127
-#            fi
-#
-#            distrobox-host-exec "${@}"
-#            mommy -s 0
-#        }
-
-        # if [ -n "${ZSH_VERSION-}" ]; then
-        #     command_not_found_handler() {
-        #     command_not_found_handle "$@"
-        #     }
+# Uncomment the following line if you don't like systemctl's auto-paging feature:
+# export SYSTEMD_PAGER=
 
 ### bling.sh source start
 test -f /usr/share/ublue-os/bluefin-cli/bling.sh && source /usr/share/ublue-os/bluefin-cli/bling.sh
 ### bling.sh source end
 #+end_src
 
+#+RESULTS: .bashrc
+
 ** =bashrc.d=
 :properties:
 :tangledir: ~/.bashrc.d/
 :end:
 
-#+name: emacs.bashrc
+[[https://superuser.com/questions/39751/add-directory-to-path-if-its-not-already-there][Source for pathappend]] by qwertyzw
+: pathappend /usr/local/nysql/bin
+
+This function is interactively usable and converts a relative path to absolute one.
+
+#+name: 00-functions.bashrc
+#+begin_src bash
+pathappend() {
+    for ARG in "$@"
+    do
+        if [ -d "$ARG" ]
+        then
+            if [[ ":$PATH:" != *":$ARG:"* ]]
+            then
+                if ARGA=$(readlink -f "$ARG")           #notice me
+                then
+                    if [[ ":$PATH:" != *":$ARGA:"* ]]
+                    then
+                        PATH="${PATH:+"$PATH:"}$ARGA"
+                    fi
+                else
+                    PATH="${PATH:+"$PATH:"}$ARG"
+                fi
+            fi
+        else
+            printf "Error: %s is not a directory.\n" "$ARG" >&2
+        fi
+    done
+}
+#+end_src
+
+#+name: 01-user-python.bashrc
+#+begin_src bash
+pathappend ~/.local/bin/
+#+end_src
+
+#+name: femacs.bashrc
 #+begin_src bash :mkdirp yes
-export EDITOR=emacsclient
+# Container specific configs
+if [ -f /run/.toolboxenv ]; then
+    source /run/.containerenv
+    # Distrobox also has $CONTAINER_ID
+
+    if [[ $name = "femacs" ]]; then
+        export EDITOR=emacsclient
+        pathappend ~/.config/emacs/bin /home/linuxbrew/.linuxbrew/bin /home/linuxbrew/.linuxbrew/sbin
+    fi
+
+    if [[ $name = "lemming" ]]; then
+        pathappend ~/.local/share/qlot/bin ~/src/lem /home/linuxbrew/.linuxbrew/bin /home/linuxbrew/.linuxbrew/sbin
+    fi
+fi
 #+end_src
 
 - [ ] Also see =toolboxes.org=
 [[file:toolboxes.org::*femacs integration with Homebrew =.bashrc.d=][femacs integration with Homebrew =.bashrc.d=]]
 
-
 #+name: git.bashrc
-#+begin_src bash :mkdirp yes
-export EDITOR=emacsclient
+#+begin_src bash :tangle no :mkdirp yes
 #+end_src
 
 Adding these lines makes vterm freak out.
@@ -105,10 +124,191 @@ Adding these lines makes vterm freak out.
 : exec "git config --global user.email \"weavermarquez0@gmail.com\""
 
 ** =.gitconfig=
+:properties:
+:tangledir: ~/.config/git/
+:end:
 
-#+name: .gitconfig
+https://protesilaos.com/codelog/2021-01-26-git-diff-hunk-elisp-org/
+
+#+name: attributes
+#+begin_src conf
+*.lisp  diff=lisp
+*.el    diff=lisp
+*.org    diff=org
+#+end_src
+
+#+name: config
 #+begin_src conf
 [user]
-	name = weavermarquez
+  name = weavermarquez
 	email = weavermarquez0@gmail.com
+[core]
+  excludesfile = ~/.config/git/ignore
+  attributesfile = ~/.config/git/attributes
+[merge]
+  conflictstyle = diff3
+[pull]
+  rebase = false
+[format]
+  thread = true
+[diff "lisp"]
+  xfuncname = "^(((;;;+ )|\\(|([ \t]+\\(((cl-|el-patch-)?def(un|var|macro|method|custom)|gb/))).*)$"
+[diff "org"]
+   xfuncname = "^(\\*+ +.*|#\\+title:.*)$"
 #+end_src
+
+
+I am not using these, though.
+#+begin_src conf :tangle no
+[user]
+  signingkey = 99BD6459CD5CA3EA
+[commit]
+  gpgsign = true
+#+end_src
+
+** TODO COMMENT femacs integration with Homebrew =.bashrc.d=
+:properties:
+:tangledir: ~/.bashrc.d/
+:end:
+
+I want this to be included in =femacs=.
+This modifies the PATH. Should I fix that instead of using the approach in [[file:chezmoi.org::*=bashrc=][=bashrc=]] where detected if we were in =femacs= then modified path?
+
+#+name: brew.bashrc
+#+begin_src bash :tangle no
+#!/usr/bin/env bash
+[[ -d /home/linuxbrew/.linuxbrew && $- == *i* ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+#+end_src
+** COMMENT Other thingies
+
+#+begin_src bash :tangle no
+
+# If not in a container
+#if [ ! -e /run/.containerenv ] && [ ! -e /.dockerenv ]; then ... fi
+# Homebrew is set up elsewhere.
+#+end_src
+
+* beets
+:properties:
+:tangledir: ~/.config/beets/
+:end:
+[[https://beets.readthedocs.io/en/stable/guides/main.html#configuring][beets configuration]]
+
+This is currently installed on host user.
+
+Most likely we need to install it on bluefin.
+- [ ] I need to figure out how to install this
+
+#+name: config.yaml
+#+begin_src yaml
+directory: ~/Music
+library: ~/data/musiclibrary.db
+import:
+    move: yes
+#+end_src
+
+
+  ≠ Album: Selected Ambient Works Volume II (disc2) -> Selected Ambient Works, Volume II
+
+* TODO memacs
+<2025-01-22 Wed>
+:properties:
+:tangledir: ~/.dotfiles/
+:end:
+
+[[github:novoid/memacs?tab=readme-ov-file][Memacs Readme]]
+** Installation
+Run this in your system. When run in femacs this should install to =bluefin-cli='s Python instead.
+: pipx is /home/linuxbrew/.linuxbrew/bin/pipx
+#+begin_src bash
+pipx install memacs[all]
+#+end_src
+
+And now memacs are available.
+** Usage
+[[https://github.com/novoid/Memacs/tree/master/docs][Memacs Modules Docs]]
+
+- [ ] Set Memacs in =$PYTHONPATH=?
+  #+begin_src python
+import os
+os.environ.get('PYTHONPATH', '').split(os.pathsep)
+  #+end_src
+
+  #+RESULTS:
+  : None
+- [ ] Create a cron job?
+
+
+
+#+begin_src bash
+upower -i /org/freedesktop/UPower/devices/battery_BAT0
+#+end_src
+
+#+RESULTS:
+
+: #!/bin/sh
+** IDEA Firefox
+- [ ] Feature request :: Allow =number-entries= to be the /most recent/ files.
+
+: python bin/memacs_firefox.py -f "/home/rgrau/.mozilla/firefox/3hlzuwen.default/places.sqlite" >~/org/mozhist.org_archive
+
+#+begin_src bash :async
+memacs_firefox --file ~/.mozilla/firefox/nyuj1rj4.default-release-1/places.sqlite --output ~/org/memacs/mozhist.org_archive
+#+end_src
+
+#+RESULTS:
+
+#+begin_quote
+📦[kwalerie@femacs .dotfiles]$ memacs_firefox --help
+usage: memacs_firefox [-h] [--version] [-v] [-s] [-o FILE] [-a] [-t TAG] [--autotagfile FILE] [--number-entries NUMBER_ENTRIES] [--columns-header STRING] [--custom-header STRING] [--add-to-time-stamps STRING]
+                      [--inactive-time-stamps] -f HISTORYSTORE [--output-format OUTPUT_FORMAT] [--omit-drawer]
+
+This class will parse firefox history file (places.sqlite) and
+produce an org file with all your visited sites
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  -v, --verbose         enable verbose mode
+  -s, --suppress-messages
+                        do not show any log message - helpful when -o not set
+  -o, --output FILE     Org-mode file that will be generated (see above). If no output file is given, result gets printed to stdout
+  -a, --append          when set and outputfile exists, then only new entries are appendend. criterion: :ID: property
+  -t, --tag TAG         overriding tag: :Memacs:<tag>: (on top entry)
+  --autotagfile FILE    file containing autotag information, see doc file FAQs_and_Best_Practices.org
+  --number-entries NUMBER_ENTRIES
+                        how many entries should be written?
+  --columns-header STRING
+                        if you want to add an #+COLUMNS header, please specify its content as STRING
+  --custom-header STRING
+                        if you want to add an arbitrary header line, please specify its content as STRING
+  --add-to-time-stamps STRING
+                        if data is off by, e.g., two hours, you can specify "+2" or "-2" here to correct it with plus/minus two hours
+  --inactive-time-stamps
+                        inactive time-stamps are written to the output file instead of active time-stamps. Helps to move modules with many entries to the inactive layer of the agenda.
+  -f, --file HISTORYSTORE
+                        path to places.sqlite file. usually in /home/rgrau/.mozilla/firefox/__SOMETHING__.default/places.sqlite
+  --output-format OUTPUT_FORMAT
+                        format string to use for the headline
+  --omit-drawer         Use a minimal output format that omits the PROPERTIES drawer.
+#+end_quote
+
+- [ ] q :: but why does it add an unnecessary space, failing to comply to orgdown?
+** IDEA New Modules
+New Modules
+- [ ] Telegram
+- [ ] Discord...?
+- [ ] Microsoft Edge
+- [ ] Microsoft Recall-esque screenshots with OCR? Hmm.
+- [ ] GPTEL Conversations!! Yes!
+- Fitness Tracker / Amazfit?
+- Audiobooks, Lollypop
+
+
+Feature Ideas
+- Is there a way to filter browsing history so that it's a bit more useful? Maybe a TF-IDF filter?
+- Dispatch to clisp / rust parser for memacs files?
+
+** Optimize Agenda performance?
+https://orgmode.org/worg/agenda-optimization.html
+

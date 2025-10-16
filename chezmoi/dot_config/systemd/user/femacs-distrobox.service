@@ -6,7 +6,6 @@ Type=oneshot
 ExecStart=/usr/bin/distrobox assemble create --file %h/.config/systemd/user/distrobox.ini -n femacs
 ExecStart=/usr/bin/distrobox enter femacs
 RemainAfterExit=true
-Restart=always
 
 [Install]
 WantedBy=multi-user.target default.target
