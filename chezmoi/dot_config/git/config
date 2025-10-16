@@ -14,3 +14,5 @@
   xfuncname = "^(((;;;+ )|\\(|([ \t]+\\(((cl-|el-patch-)?def(un|var|macro|method|custom)|gb/))).*)$"
 [diff "org"]
    xfuncname = "^(\\*+ +.*|#\\+title:.*)$"
+[github]
+	user = weavermarquez
