@@ -121,7 +121,7 @@ fi
 
 Adding these lines makes vterm freak out.
 : exec "git config --global user.name \"weavermarquez\""
-: exec "git config --global user.email \"weavermarquez0@gmail.com\""
+: exec "git config --global user.email \"weavermarquez0+github@gmail.com\""
 
 ** =.gitconfig=
 :properties:
@@ -312,3 +312,133 @@ Feature Ideas
 ** Optimize Agenda performance?
 https://orgmode.org/worg/agenda-optimization.html
 
+* Silverblue Swapfile
+
+** Increasing Zram Capacity
+This must be written with sudo.
+https://universal-blue.discourse.group/t/is-there-any-way-to-add-more-swap-space/2564/8
+
+#+begin_quote
+Is there any way to add more swap space?
+
+post by jaizon on Jun 28, 2024
+jaizon
+Jun 2024
+
+I’m currently running Bazzite in a machine with only 8gb of ram, and I noticed the installation already gave me 4gb of swap. But is there any way to safely add more swap to it, at least making it 8gb?
+
+
+post by stego on Jun 29, 2024
+stego
+Jun 2024
+
+Bluefin (and therefore probably also Bazzite) uses zram. You can find the preinstalled config file here: =/usr/lib/systemd/zram-generator.conf= and you can create your own settings by creating the file =/etc/systemd/zram-generator.conf=.
+
+See =man 5 zram-generator.conf= for details.
+#+end_quote
+
+We increase this from 8G to 12G, since Zram isn't actually a swap file.
+Additionally, we change to the zstd compression algo and set a swap-priority that will be higher than using the swapfile itself.
+
+#+begin_src :tangle no
+# This config file enables a /dev/zram0 device with the default settings:
+# — size — same as available RAM or 8GB, whichever is less
+# — compression — most likely lzo-rle
+#
+# To disable, uninstall zram-generator-defaults or create empty
+# /etc/systemd/zram-generator.conf file.
+[zram0]
+zram-size = min(ram, 12288)
+compression-algorithm = zstd
+swap-priority = 100
+#+end_src
+
+** TODO Setup BTRFS Luks Swapfile
+https://b.libdb.so/silverblue-btrfs-swapfile/
+*** Source Doc
+
+#+begin_example org
+,* silverblue and a btrfs swapfile
+quick guide on having a swapfile inside a LUKS-encrypted btrfs partition on Fedora Silverblue.
+
+why should i care
+if you need working hibernation (i actually didn’t! but i preferred doing this anyway), then a random-encrypted swap is out of the picture.
+
+if you’re like me and forgot to put btrfs inside a LVM2 before putting in LUKS, then you also won’t have the luxury of having an already-encrypted swap partition.
+
+in that case, your only viable choice left without doing partition changes to btrfs is to create a swapfile.
+
+in a normal world…
+creating a btrfs swapfile on something like Arch would be pretty simple. the workflow kinda goes like this:
+
+: sudo btrfs subvolume create /swap
+: sudo btrfs filesystem mkswapfile ... /swap/swapfile
+and then you edit /etc/fstab. all done!
+
+don’t actually do this. you will break your Silverblue install.
+
+not many people document this either; i saw a single reddit thread and they showed like half the steps and just hand-waved the fstab part… well, that part was why i had to recover my system like 10 times on a live Linux USB.
+
+the Silverblue way
+first, you still need a btrfs subvolume, but it must be in /var. in Silverblue, / is a “composefs”:
+
+: composefs on / type overlay (ro,relatime,seclabel,lowerdir+=/run/ostree/.private/cfsroot-lower,datadir+=/sysroot/ostree/repo/objects,redirect_dir=on,metacopy=on)
+figuring out how to modify / is a no-go therefore, and will probably give you a headache.
+
+we’re gonna be careful because Silverblue is basically stone-age NixOS and is very fragile, so we’ll take things very slowly.
+
+first, check what subvolumes you already have. be sure to memorize this layout and later check that you haven’t destroyed anything:
+
+: sudo btrfs subvolume list /root
+we’re gonna do something a bit weird here. we’ll mount our root btrfs partition a second time under /mnt. this is because our current root mount is incredibly messy, and btrfs subvolume create will behave weirdly. to do this, do:
+
+: sudo mount /dev/disk/by-uuid/3d312850-544d-4a06-a493-5a03028ed061 \
+  : -t btrfs \
+  : -o subvol=root \
+  : /mnt
+you can get the /dev/mapper part from lsblk, fdisk -l or GNOME disks which is what i used. you’re looking for the path to the btrfs partition.
+
+also important to make sure that the subvol value matches with what you saw in subvolume list earlier.
+
+now that /mnt is mounted, you may finally create the swap subvolume here:
+
+: sudo btrfs subvolume create /mnt/swap
+: sudo btrfs subvolume list /root # validate that a `path swap` is present
+then create the swapfile as usual, but in this subvolume:
+
+: sudo btrfs filesystem mkswapfile /var/swap/swapfile --size 32g -U time
+then, edit /etc/fstab to add the new subvolume and the swapfile.
+
+to do this, first make note of what the UUID of the root mount is. in my case, it’s this line:
+
+: UUID=3d312850-544d-4a06-a493-5a03028ed061 /         btrfs subvol=root,x-systemd.device-timeout=0,ro,compress=zstd:1,discard=async 0 0
+duplicate this line for the swap subvolume. something like this:
+
+: UUID=3d312850-544d-4a06-a493-5a03028ed061 /var/swap btrfs subvol=swap,x-systemd.device-timeout=0,nofail,nodatacow,nodatasum 0 0
+then, add the swapfile mount:
+
+: /var/swap/swapfile none swap defaults,nofail 0 0
+then, reload systemd:
+
+: sudo systemctl daemon-reload
+THIS STEP IS INCREDIBLY IMPORTANT. you may not be able to boot to your current build or even previous builds without it.
+
+as a last step, to validate that everything mounts fine, do:
+
+: sudo mount -a
+: sudo swapon -a
+then validate your swapfile:
+
+: sudo swapon -s
+then, reboot and pray!
+
+disclaimer
+i’m writing this as a post-mortem kind of doc. i did not test this out on my machine, and a lot of these commands were on the live environment that i had to use to recover my machines, so they’re unfortunately long gone.
+
+if you’re worried about breaking your setup, i recommend doing one big change at a time. for example, create the subvolume, add its entry to fstab with a nofail flag, reload then reboot. repeat for the swapfile.
+
+if everything still breaks then, don’t blame me. use a better distro like NixOS.
+
+bye!
+#+end_example
+*** Hmm

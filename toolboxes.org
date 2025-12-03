@@ -173,6 +173,45 @@ markdownlint
 # npm install -g typescript-language-server typescript
 #+end_example
 
+** Feedback from Codex
+#+begin_quote
+   **Findings**
+   - Major – `toolboxes.org:532` (also `toolboxes.org:823`): the user units call `distrobox enter femacs|lemming` without a non-interactive command. `distrobox enter` expects an interactive TTY, so the oneshot service will hang or fail during boot. Append a command (for example `-- true`) or switch to `distrobox-enter --name … -- true` so systemd can complete the startup.
+   - Major – `toolboxes.org:340`, `toolboxes.org:410`, `toolboxes.org:473`, `toolboxes.org:739` (and similar lines): within each `[femacs]`/`[lemming]` section the `additional_packages` key is repeated. `distrobox assemble` parses the INI with standard semantics, so only the final assignment survives and earlier package lists are lost. Consolidate the packages into a single value (space-separated or multiline with `\`) per section so the toolbox actually installs everything.
+
+   **Open Questions**
+   - After tangling and enabling the user units, do you see the services stuck in `activating (start)`? That would confirm the `distrobox enter` issue.
+   - Have you noticed packages missing inside the containers after `distrobox assemble create`? If so, that lines up with the `additional_packages` overwrite.
+
+Codex> No comment on that atm. I'm wondering if you have any easy ways to help me reason about what I'm trying to do easier and/or ensure that my pet containers (mainly just femacs for my main emacs env as well as bluefin for my ublue cli homebrew hosting; lemming was a temporary experiment while I was checking out LEM text editor.) I was considering switching to nix for a while but uhhhh. seems like a little much even for me right now. 
+<shell-maker-end-of-prompt>
+▶ 💡 Thought process
+
+   **Suggesting toolbox and config organization**
+
+   I’m putting together clear guidance on reorganizing toolboxes and configs with ideas like separating host and container sections, using tables and tags for clarity, and tracking tasks via TODO states. I'll also suggest tools like noweb for reuse, property drawers for metadata, and verifying changes with scripts and `just` tasks to keep everything maintainable.
+
+   **Organize Context**
+   - Split `toolboxes.org` into per-container sections with explicit scopes—e.g. top-level headings for host, `bluefin-cli`, `femacs`, `lemming`—and keep cross-cutting ideas (brew exports, init hooks) under their own heading so you can link from TODOs instead of repeating.  
+   - Use property drawers on each heading to capture owner/goals (`:purpose: femacs = doom + GUI`, `:runtime: distrobox`) so scrolling the outline tells you “why this exists” before diving into blocks.
+   - Capture decisions inline with the TODO or DONE that prompted them; a short `:LOGBOOK:` note or a `CLOSED:` timestamp helps you remember why a package moved between host/container.
+
+   **Control Package Lists**
+   - Collapse repeated `additional_packages` assignments into one multiline block per container (`additional_packages="…\ \"`), or keep the definitive lists in named Org tables and use noweb expansion when tangling. It reduces drift and makes it obvious which dependencies live where.
+   - Maintain a comparison table (rows = package groups, columns = host vs `bluefin-cli` vs `femacs`) so you can see at a glance what still needs migration to brew and which container owns which tooling.
+
+   **Triage & Automation**
+   - Turn the “move to Homebrew” effort into a structured checklist: one TODO per package group with tags like `:femacs:brew:`; link each to the table or code block that does the work so you can close it only when the block reflects reality.
+   - Add quick diagnostics to your `justfile`: commands like `just femacs-check` that run `distrobox enter femacs -- which brew` or `distrobox enter femacs -- env | grep PATH` give you fast feedback when debugging PATH/package issues.
+
+   **Service Reliability**
+   - For the systemd units (`toolboxes.org:532`, `toolboxes.org:823`), wrap `distrobox enter` around an explicit command (`ExecStart=/usr/bin/distrobox-enter --name femacs -- true`) and consider a complementary `ExecStop` that exits cleanly. That makes it obvious to systemd that “start succeeded,” and you can attach a note in the heading reminding yourself why oneshot is safe.
+
+   **Going Forward**
+   - If you revisit Nix later, this structure gives you a blueprint for what would become modules; until then, keeping the Org doc declarative (tables + named blocks) plus automated sanity checks will make your pet containers much easier to reason about.
+
+#+end_quote
+
 * bluefin-cli quadlet =bluefin-cli.container=
 :properties:
 :header-args: :tangle ~/.config/containers/systemd/bluefin-cli.container

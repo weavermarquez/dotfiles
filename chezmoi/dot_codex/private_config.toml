@@ -1,0 +1,8 @@
+[projects."/var/home/kwalerie/Documents/org/30-fractal/.git/modules"]
+trust_level = "trusted"
+
+[projects."/var/home/kwalerie/Documents/org/30-fractal/james-algebra"]
+trust_level = "trusted"
+
+[projects."/var/home/kwalerie/src/codex-acp"]
+trust_level = "trusted"
